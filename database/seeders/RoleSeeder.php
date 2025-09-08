@@ -36,17 +36,17 @@ class RoleSeeder extends Seeder
                 'page_index' => '/app',
                 'created_at' => now(),
             ],
-            // [
-            //     'role' => 'Director', #3
-            //     'description' => 'Rol dedicado para el director del DIF.',
-            //     'read' => '1,2,4,7,8,9,12,13,14,15,16,17,19,20,21,22,23,24',
-            //     'create' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
-            //     'update' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
-            //     'delete' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
-            //     'more_permissions' => '',
-            //     'page_index' => '/app',
-            //     'created_at' => now(),
-            // ],
+            [
+                'role' => 'Vendedor', #3
+                'description' => 'Rol dedicado para usuarios que realizan las ventas.',
+                'read' => '1,2,4,7,8,9,12,13,14,15,16,17,19,20,21,22,23,24',
+                'create' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
+                'update' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
+                'delete' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
+                'more_permissions' => '',
+                'page_index' => '/app',
+                'created_at' => now(),
+            ],
             // [
             //     'role' => 'Encargado', #4
             //     'description' => 'Rol dedicado para personal encargado del departamento.',

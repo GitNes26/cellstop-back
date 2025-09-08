@@ -14,9 +14,7 @@ class PositionSeeder extends Seeder
     public function run(): void
     {
         $positions = [
-            "Director",
-            "Encargado",
-            "Recepcionista",
+            "Vendedor",
         ];
 
         $data = array_map(function ($position) {
