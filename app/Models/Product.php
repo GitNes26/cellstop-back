@@ -34,6 +34,7 @@ class Product extends Model
      * @var string
      */
     protected $primaryKey = 'id';
+    
 
     public function chip()
     {
@@ -45,6 +46,7 @@ class Product extends Model
         return $this->hasOne(Device::class);
     }
 
+    
     /**
      * Valores defualt para los campos especificados.
      * @var array
