@@ -167,25 +167,25 @@ class UserController extends Controller
         }
 
 
-        // crear notificación
-        $notification = Notification::create([
-            'title' => 'Nueva Orden',
-            'message' => 'Se creó una nueva orden: ' . $order->title,
-            'type' => 'success',
-            'created_by' => auth()->id(),
-        ]);
+        // // crear notificación
+        // $notification = Notification::create([
+        //     'title' => 'Nueva Orden',
+        //     'message' => 'Se creó una nueva orden: ' . $order->title,
+        //     'type' => 'success',
+        //     'created_by' => auth()->id(),
+        // ]);
 
-        // asignar destinatarios (ejemplo: rol admin id=1)
-        $target = NotificationTarget::create([
-            'notification_id' => $notification->id,
-            'target_type' => 'role',
-            'target_id' => 1,
-        ]);
+        // // asignar destinatarios (ejemplo: rol admin id=1)
+        // $target = NotificationTarget::create([
+        //     'notification_id' => $notification->id,
+        //     'target_type' => 'role',
+        //     'target_id' => 1,
+        // ]);
 
-        // obtener usuarios del rol admin
-        $userIds = \App\Models\User::where('role_id', 1)->pluck('id')->toArray();
+        // // obtener usuarios del rol admin
+        // $userIds = \App\Models\User::where('role_id', 1)->pluck('id')->toArray();
 
-        broadcast(new NewNotification($notification, $userIds))->toOthers();
+        // broadcast(new NewNotification($notification, $userIds))->toOthers();
 
         return response()->json($response, $response->data["status_code"]);
     }
