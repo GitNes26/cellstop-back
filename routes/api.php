@@ -1,12 +1,17 @@
 <?php
 
+use App\Http\Controllers\ActivationController;
+use App\Http\Controllers\AssignmentsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChipController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersonalInfoController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Models\ObjResponse;
@@ -122,15 +127,43 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [UserController::class, 'deleteMultiple']);
     });
 
-    Route::prefix("personalInfo")->group(function () {
-        Route::get("/", [PersonalInfoController::class, 'index']);
-        Route::get("/selectIndex", [PersonalInfoController::class, 'selectIndex']);
-        Route::post("/createOrUpdate/{id?}", [PersonalInfoController::class, 'createOrUpdate']);
-        Route::get("/id/{id}", [PersonalInfoController::class, 'show']);
-        Route::get("/delete/{id}", [PersonalInfoController::class, 'delete']);
-        Route::get("/disEnable/{id}/{active}", [PersonalInfoController::class, 'disEnable']);
-        Route::get("/deleteMultiple", [PersonalInfoController::class, 'deleteMultiple']);
+    
+    // Rutas para la gestión de productos
+    Route::apiResource('products', ProductController::class);
+    
+    // Rutas para la gestión de chips
+    // Route::apiResource('chips', ChipController::class);
+    Route::prefix("chips")->group(function () {
+        Route::get("/", [ChipController::class, 'index']);
+        Route::get("/selectIndexByRole/{role_id}", [ChipController::class, 'selectIndexByRole']);
+        Route::get("/selectIndex", [ChipController::class, 'selectIndex']);
+        Route::post("/store", [ChipController::class, 'store']);
+        Route::post("/update/{id?}", [ChipController::class, 'update']);
+        Route::get("/id/{id}", [ChipController::class, 'show']);
+        Route::get("/delete/{id}", [ChipController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [ChipController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [ChipController::class, 'deleteMultiple']);
+
+        Route::post("/import", [ImportController::class, 'store']);
     });
+    // Ruta para la importación de chips
+    // Route::prefix("chips")->post('import', [ImportController::class, 'store']);
+
+    // Rutas para la gestión de activaciones
+    Route::post('activations', [ActivationController::class, 'store']);
+
+    // Rutas para la gestión de asignaciones
+    Route::post('assignments', [AssignmentsController::class, 'assign']);
+
+    // Route::prefix("personalInfo")->group(function () {
+    //     Route::get("/", [PersonalInfoController::class, 'index']);
+    //     Route::get("/selectIndex", [PersonalInfoController::class, 'selectIndex']);
+    //     Route::post("/createOrUpdate/{id?}", [PersonalInfoController::class, 'createOrUpdate']);
+    //     Route::get("/id/{id}", [PersonalInfoController::class, 'show']);
+    //     Route::get("/delete/{id}", [PersonalInfoController::class, 'delete']);
+    //     Route::get("/disEnable/{id}/{active}", [PersonalInfoController::class, 'disEnable']);
+    //     Route::get("/deleteMultiple", [PersonalInfoController::class, 'deleteMultiple']);
+    // });
 
     // ----------------- RUTAS BASICAS -----------------
 });

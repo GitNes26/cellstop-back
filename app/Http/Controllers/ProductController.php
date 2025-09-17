@@ -47,7 +47,7 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $list = Product::where('active', true)
-                ->select('id as id', 'position as label')
+                ->select('id as id', 'product_type as label')
                 ->orderBy('product_type', 'asc')->get();
 
             $response->data = ObjResponse::SuccessResponse();

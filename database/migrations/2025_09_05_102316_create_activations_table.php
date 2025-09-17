@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('activations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('chip_id')->constrained('chips', 'id');
-            $table->foreignId('user_id')->nullable()->constrained('users', 'id'); //vendedor
+            $table->foreignId('chip_id')->constrained('chips', 'id')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users', 'id')->onDelete('cascade'); //vendedor
             $table->string('activation_type', 100)->nullable();
             $table->timestamp('activation_date')->nullable();
             $table->string('status', 50)->nullable();
+            // $table->enum('status', ['completada', 'pendiente', 'cancelada'])->default('completada');
             $table->enum('source', ['imp', 'int']);
             $table->boolean('active')->default(true);
             $table->timestamps();

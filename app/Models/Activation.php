@@ -22,16 +22,12 @@ class Activation extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'assignment_id',
+       'chip_id',
         'user_id',
-        'pos_id',
-        'buyer_name',
-        'buyer_phone',
-        'sale_date',
-        'latitude',
-        'longitude',
-        'evidence_photo',
+        'activation_type',
+        'activation_date',
         'status',
+        'source',
         'active'
     ];
 

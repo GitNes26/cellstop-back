@@ -43,6 +43,11 @@ class Import extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    public function chips()
+    {
+        return $this->hasMany(Chip::class);
+    }
+
 
     /**
      * Valores defualt para los campos especificados.

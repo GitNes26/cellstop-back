@@ -28,4 +28,28 @@ class AssignmentsController extends Controller
 
         return response()->json(['message' => 'Productos asignados']);
     }
+
+    public function unassign(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'product_ids' => 'required|array'
+        ]);
+
+        foreach ($request->product_ids as $pid) {
+            Assignment::where('user_id', $request->user_id)
+                ->where('product_id', $pid)
+                ->delete();
+
+            Product::where('id', $pid)->update(['status' => 'disponible']);
+        }
+
+        return response()->json(['message' => 'Productos desasignados']);
+    }
+
+    public function index(Request $request)
+    {
+        $assignments = Assignment::with('product')->get();
+        return response()->json($assignments);
+    }
 }
