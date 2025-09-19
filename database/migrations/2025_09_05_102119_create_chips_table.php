@@ -14,12 +14,29 @@ return new class extends Migration
         Schema::create('chips', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained('products', 'id');
-            $table->string('iccid', 30)->unique();
-            $table->string('imei', 30)->nullable();
-            $table->string('phone_number', 20)->nullable();
-            $table->string('operator', 50)->nullable();
+
+            $table->string('filtro')->nullable();
+            $table->string('telefono')->nullable();
+            $table->string('imei')->nullable();
+            $table->string('iccid')->nullable();
+            $table->string('estatus_lin')->nullable();
+            $table->string('movimiento')->nullable();
+            $table->date('fecha_activ')->nullable();
+            $table->date('fecha_prim_llam')->nullable();
+            $table->date('fecha_dol')->nullable();
+            $table->string('estatus_pago')->nullable();
+            $table->string('motivo_estatus')->nullable();
+            $table->decimal('monto_com', 10, 2)->nullable();
+            $table->string('tipo_comision')->nullable();
+            $table->string('evaluacion')->nullable();
+            $table->string('fza_vta_pago')->nullable();
+            $table->date('fecha_evaluacion')->nullable();
+            $table->string('folio_factura')->nullable();
+            $table->date('fecha_publicacion')->nullable();
+
             $table->enum('location_status', ['stock', 'con_vendedor', 'distribuido'])->default('stock');
             $table->enum('activation_status', ['virgen', 'pre_activado', 'activado', 'caducado'])->default('virgen');
+
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

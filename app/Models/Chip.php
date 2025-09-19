@@ -23,10 +23,26 @@ class Chip extends Model
      */
     protected $fillable = [
         'product_id',
-        'iccid',
+
+        'filtro',
+        'telefono',
         'imei',
-        'phone_number',
-        'operator',
+        'iccid',
+        'estatus_lin',
+        'movimiento',
+        'fecha_activ',
+        'fecha_prim_llam',
+        'fecha_dol',
+        'estatus_pago',
+        'motivo_estatus',
+        'monto_com',
+        'tipo_comision',
+        'evaluacion',
+        'fza_vta_pago',
+        'fecha_evaluacion',
+        'folio_factura',
+        'fecha_publicacion',
+
         'location_status',
         'activation_status',
         'active'
@@ -64,6 +80,15 @@ class Chip extends Model
     {
         return $this->hasMany(Portability::class);
     }
+
+    protected $casts = [
+        'fecha_activ' => 'date',
+        'fecha_prim_llam' => 'date',
+        'fecha_dol' => 'date',
+        'fecha_evaluacion' => 'date',
+        'fecha_publicacion' => 'date',
+        'active' => 'boolean'
+    ];
 
     /**
      * Valores defualt para los campos especificados.
