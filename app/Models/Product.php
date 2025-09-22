@@ -21,7 +21,7 @@ class Product extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = ['product_type', 'description', 'status', 'active'];
+    protected $fillable = ['product_type', 'description', 'status', 'import_id', 'active'];
 
     /**
      * Nombre de la tabla asociada al modelo.
@@ -34,7 +34,7 @@ class Product extends Model
      * @var string
      */
     protected $primaryKey = 'id';
-    
+
 
     public function chip()
     {
@@ -46,7 +46,12 @@ class Product extends Model
         return $this->hasOne(Device::class);
     }
 
-    
+    public function fileImport()
+    {
+        return $this->belongsTo(Import::class);
+    }
+
+
     /**
      * Valores defualt para los campos especificados.
      * @var array

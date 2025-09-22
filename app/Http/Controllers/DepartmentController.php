@@ -100,7 +100,7 @@ class DepartmentController extends Controller
                 ]
             ], $id);
             if ($validator->fails()) {
-                $response->data = ObjResponse::CatchResponse();
+                $response->data = ObjResponse::CatchResponse($validator->errors());
                 $response->data["message"] = "Error de validación";
                 $response->data["errors"] = $validator->errors();
                 return response()->json($response);

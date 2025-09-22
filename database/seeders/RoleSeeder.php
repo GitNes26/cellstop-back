@@ -39,47 +39,14 @@ class RoleSeeder extends Seeder
             [
                 'role' => 'Vendedor', #3
                 'description' => 'Rol dedicado para usuarios que realizan las ventas.',
-                'read' => '1,2,4,7,8,9,12,13,14,15,16,17,19,20,21,22,23,24',
-                'create' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
-                'update' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
-                'delete' => '2,7,8,9,13,14,15,17,20,21,22,23,24',
+                'read' => null,
+                'create' => null,
+                'update' => null,
+                'delete' => null,
                 'more_permissions' => '',
                 'page_index' => '/app',
                 'created_at' => now(),
             ],
-            // [
-            //     'role' => 'Encargado', #4
-            //     'description' => 'Rol dedicado para personal encargado del departamento.',
-            //     'read' => '1,2,4,7,8,9,12,13,14,16,17,19',
-            //     'create' => '2,8,9,13,14,17',
-            //     'update' => '2,8,9,13,14,17',
-            //     'delete' => '2,8,17',
-            //     'more_permissions' => '',
-            //     'page_index' => '/app',
-            //     'created_at' => now(),
-            // ],
-            // [
-            //     'role' => 'Recepcionista', #5
-            //     'description' => 'Rol dedicado para personal encargado del departamento.',
-            //     'read' => '1,2,4,7,8,9,12,13,14,15,16,17,19,20',
-            //     'create' => '2,7,8,9,13,14,15,17,20',
-            //     'update' => '2,13,14,15',
-            //     'delete' => '2',
-            //     'more_permissions' => '',
-            //     'page_index' => '/app',
-            //     'created_at' => now(),
-            // ],
-            // [
-            //     'role' => 'Ciudadano', #6
-            //     'description' => 'Rol dedicado para el ciudadano.',
-            //     'read' => '',
-            //     'create' => '',
-            //     'update' => '',
-            //     'delete' => '',
-            //     'more_permissions' => '',
-            //     'page_index' => '/app',
-            //     'created_at' => now(),
-            // ]
         ]);
     }
 }
