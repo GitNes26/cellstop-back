@@ -14,13 +14,20 @@ class DepartmentSeeder extends Seeder
     public function run(): void
     {
         $departments = [
-            "ADMINISTRACION",
-            "VENTAS"
+            [
+                "letters" => "ADMON",
+                "department" => "ADMINISTRACION"
+            ],
+            [
+                "letters" => "VE",
+                "department" => "VENTAS"
+            ]
         ];
 
         $data = array_map(function ($department) {
             return [
-                'department' => $department,
+                'letters' => $department['letters'],
+                'department' => $department['department'],
                 'created_at' => now(),
             ];
         }, $departments);

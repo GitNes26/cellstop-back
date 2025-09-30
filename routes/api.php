@@ -127,10 +127,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [UserController::class, 'deleteMultiple']);
     });
 
-    
+
     // Rutas para la gestión de productos
     Route::apiResource('products', ProductController::class);
-    
+
     // Rutas para la gestión de chips
     // Route::apiResource('chips', ChipController::class);
     Route::prefix("chips")->group(function () {
@@ -144,7 +144,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/disEnable/{id}/{active}", [ChipController::class, 'disEnable']);
         Route::get("/deleteMultiple", [ChipController::class, 'deleteMultiple']);
 
-        Route::post("/import", [ImportController::class, 'store']);
+        Route::post("/import", [ChipController::class, 'import']);
+        // Route::post("/import", [ImportController::class, 'store']);
     });
     // Ruta para la importación de chips
     // Route::prefix("chips")->post('import', [ImportController::class, 'store']);

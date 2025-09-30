@@ -7,8 +7,10 @@ use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ChipController extends Controller
 {
@@ -120,5 +122,94 @@ class ChipController extends Controller
         $chip->active = false;
         $chip->save();
         return response()->json(['message' => 'Chip eliminado']);
+    }
+
+    /**
+     * Importar registros desde Excel en chunks
+     */
+    public function import(Request $request)
+    {
+        $response = ObjResponse::DefaultResponse();
+        $data = $request->all();
+
+        if (!is_array($data) || count($data) === 0) {
+            $response["message"] = "No se recibieron registros válidos.";
+            return response()->json($response, 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            $rowsToInsert = [];
+
+            foreach ($data as $index => $row) {
+                // Log::error("el row:" . json_encode($row));
+                // // Validación dinámica: reglas por campo
+                // $validator = \Validator::make($row, [
+                //     "FILTRO" => "nullable",
+                //     "TELEFONO" => "required",
+                //     "IMEI" => "required",
+                //     "ICCID" => "required|min:10",
+                //     "ESTATUS LIN" => "nullable|string|max:50",
+                //     "MOVIMIENTO" => "nullable|string|max:50",
+                //     "FECHA_ACTIV" => "nullable|date",
+                //     "FECHA_PRIM_LLAM" => "nullable|date",
+                //     "FECHA DOL" => "nullable|date",
+                //     "ESTATUS_PAGO" => "nullable|string|max:50",
+                //     "MOTIVO_ESTATUS" => "nullable|string|max:255",
+                //     "MONTO_COM" => "nullable|numeric",
+                //     "TIPO_COMISION" => "nullable|string|max:100",
+                //     "EVALUACION" => "nullable|string|max:100",
+                //     "FZA_VTA_PAGO" => "nullable|string|max:100",
+                //     "FECHA EVALUACION" => "nullable|date",
+                //     "FOLIO FACTURA" => "nullable|string|max:100",
+                //     "FECHA PUBLICACION" => "nullable|date",
+                // ]);
+
+                // if ($validator->fails()) {
+                //     DB::rollBack();
+                //     $response = ObjResponse::CatchResponse("Error de validación en fila " . ($index + 2));
+                //     $response["errors"] = $validator->errors();
+                //     return response()->json($response, 422);
+                // }
+
+                $rowsToInsert[] = [
+                    "product_id" => 1,
+                    "FILTRO" => $row["FILTRO"],
+                    "TELEFONO" => $row["TELEFONO"],
+                    "IMEI" => $row["IMEI"],
+                    "ICCID" => $row["ICCID"],
+                    "ESTATUS_LIN" => $row["ESTATUS LIN"] ?? null,
+                    "MOVIMIENTO" => $row["MOVIMIENTO"] ?? null,
+                    "FECHA_ACTIV" => $row["FECHA_ACTIV"],
+                    "FECHA_PRIM_LLAM" => $row["FECHA_PRIM_LLAM"] ?? null,
+                    "FECHA_DOL" => $row["FECHA DOL"] ?? null,
+                    "ESTATUS_PAGO" => $row["ESTATUS_PAGO"] ?? null,
+                    "MOTIVO_ESTATUS" => $row["MOTIVO_ESTATUS"] ?? null,
+                    "MONTO_COM" => $row["MONTO_COM"] ?? null,
+                    "TIPO_COMISION" => $row["TIPO_COMISION"] ?? null,
+                    "EVALUACION" => $row["EVALUACION"] ?? null,
+                    "FZA_VTA_PAGO" => $row["FZA_VTA_PAGO"] ?? null,
+                    "FECHA_EVALUACION" => $row["FECHA EVALUACION"] ?? null,
+                    "FOLIO_FACTURA" => $row["FOLIO FACTURA"] ?? null,
+                    "FECHA_PUBLICACION" => $row["FECHA PUBLICACION"] ?? null,
+                    "created_at" => now(),
+                    "updated_at" => now(),
+                ];
+            }
+
+            // 🚀 Inserción masiva
+            Chip::insert($rowsToInsert);
+
+            DB::commit();
+
+            $response = ObjResponse::SuccessResponse();
+            $response["message"] = count($rowsToInsert) . " registros insertados correctamente.";
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("ExcelImportController ~ import ~ " . $e->getMessage());
+            $response = ObjResponse::CatchResponse("Error al procesar los registros -> " . $e->getMessage());
+            return response()->json($response, 500);
+        }
     }
 }

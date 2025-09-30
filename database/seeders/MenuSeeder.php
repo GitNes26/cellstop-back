@@ -110,11 +110,11 @@ class MenuSeeder extends Seeder
                 'icon' => 'BookmarksRounded',
                 'caption' => 'Gestión de Catalogos',
                 'items' => [
-                    // [
-                    //     'menu' => 'Categorias',
-                    //     'url' => '/app/catalogos/categorias',
-                    //     'icon' => 'IconBuildingSkyscraper',
-                    // ],
+                    [
+                        'menu' => 'Chips',
+                        'url' => '/app/catalogos/chips',
+                        'icon' => 'SimCardRounded',
+                    ],
                 ],
             ],
         ];
