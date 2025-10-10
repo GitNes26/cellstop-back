@@ -75,10 +75,24 @@ class ChipController extends Controller
      * @param int $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, Response $response, Int $id, bool $internal = false)
     {
-        $chip = Chip::findOrFail($id);
-        return response()->json($chip);
+        // $chip = Chip::findOrFail($id);
+        // return response()->json($chip);
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $chip = Chip::find($id);
+            if ($internal) return $chip;
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'peticion satisfactoria | empleado encontrado.';
+            $response->data["result"] = $chip;
+        } catch (\Exception $ex) {
+            $msg = "ChipController ~ show ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+        return response()->json($response, $response->data["status_code"]);
     }
 
     /**
