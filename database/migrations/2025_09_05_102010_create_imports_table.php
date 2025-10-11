@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type')->nullable();
             // $table->enum('file_type', ['imp', 'int']);
             $table->bigInteger('size')->nullable();
-            $table->integer("last_modified");
+            $table->bigInteger("last_modified");
             $table->string('path')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('uploaded_by')->constrained('users', 'id'); // quién subió

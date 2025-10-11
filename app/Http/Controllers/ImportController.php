@@ -7,6 +7,7 @@ use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ImportController extends Controller
@@ -66,41 +67,33 @@ class ImportController extends Controller
      * Crear o actualizar una importación.
      */
     // public function createOrUpdate(Request $request, Response $response, Int $id = null)
-    public function createOrUpdate($importData, ?Int $id = null)
+    public function createOrUpdate($importData, ?Int $id = null, DB $transaction)
     {
-        $response->data = ObjResponse::DefaultResponse();
+        // $response->data = ObjResponse::DefaultResponse();
         try {
-            $validator = $this->validateAvailableData($importData, 'imports', [
-                [
-                    'field' => 'name',
-                    'label' => 'Nombre del archivo',
-                    'rules' => ['required', 'string', 'max:255'],
-                    'messages' => [
-                        'required' => 'El nombre del archivo es obligatorio.',
-                        'string' => 'El nombre debe ser texto.',
-                        'max' => 'El nombre no puede superar los 255 caracteres.'
-                    ]
-                ]
-            ], $id);
+            // $validator = $this->validateAvailableData($importData, 'imports', [
+            //     [
+            //         'field' => 'name',
+            //         'label' => 'Nombre del archivo',
+            //         'rules' => ['required', 'string', 'max:255'],
+            //         'messages' => [
+            //             'required' => 'El nombre del archivo es obligatorio.',
+            //             'string' => 'El nombre debe ser texto.',
+            //             'max' => 'El nombre no puede superar los 255 caracteres.'
+            //         ]
+            //     ]
+            // ], $id);
 
-            if ($validator->fails()) {
-                $response->data = ObjResponse::CatchResponse($validator->errors());
-                $response->data["message"] = "Error de validación";
-                $response->data["errors"] = $validator->errors();
-                return response()->json($response);
-            }
+            // if ($validator->fails()) {
+            //     $response->data = ObjResponse::CatchResponse($validator->errors());
+            //     $response->data["message"] = "Error de validación";
+            //     $response->data["errors"] = $validator->errors();
+            //     return response()->json($response);
+            // }
 
             $import = Import::find($id);
             if (!$import) $import = new Import();
 
-            // $import->fill($importData->only([
-            //     'name',
-            //     'type',
-            //     'size',
-            //     'last_modified',
-            //     // 'path',
-            //     // 'notes'
-            // ]));
             $import->name = $importData['name'];
             $import->type = $importData['type'];
             $import->size = $importData['size'];
@@ -108,16 +101,19 @@ class ImportController extends Controller
             $import->uploaded_by = Auth::id();
             $import->active = true;
             $import->save();
+            return $import;
 
-            $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = $id ? 'Petición satisfactoria | Archivo actualizado.' : 'Petición satisfactoria | Archivo importado.';
-            $response->data["alert_text"] = $id ? "Archivo actualizado" : "Archivo registrado";
+            // $response->data = ObjResponse::SuccessResponse();
+            // $response->data["message"] = $id ? 'Petición satisfactoria | Archivo actualizado.' : 'Petición satisfactoria | Archivo importado.';
+            // $response->data["alert_text"] = $id ? "Archivo actualizado" : "Archivo registrado";
         } catch (\Exception $ex) {
+            DB::rollBack();
+            $transaction::rollBack();
             $msg = "ImportController ~ createOrUpdate ~ Error: " . $ex->getMessage();
             Log::error($msg);
-            $response->data = ObjResponse::CatchResponse($msg);
+            // $response->data = ObjResponse::CatchResponse($msg);
         }
-        return response()->json($response, $response->data["status_code"]);
+        // return response()->json($response, $response->data["status_code"]);
     }
 
     /**

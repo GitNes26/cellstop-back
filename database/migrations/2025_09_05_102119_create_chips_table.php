@@ -34,9 +34,10 @@ return new class extends Migration
             $table->string('folio_factura')->nullable();
             $table->date('fecha_publicacion')->nullable();
 
-            $table->enum('location_status', ['stock', 'con_vendedor', 'distribuido'])->default('stock');
-            $table->enum('activation_status', ['virgen', 'pre_activado', 'activado', 'caducado'])->default('virgen');
+            $table->enum('location_status', ['Stock', 'Asignado', 'Distribuido'])->default('stock');
+            $table->enum('activation_status', ['Virgen', 'Pre activado', 'Activado', 'Caducado'])->default('Virgen');
 
+            $table->foreignId('import_id')->constrained('imports', 'id');
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

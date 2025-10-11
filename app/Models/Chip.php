@@ -42,9 +42,10 @@ class Chip extends Model
         'fecha_evaluacion',
         'folio_factura',
         'fecha_publicacion',
-
         'location_status',
         'activation_status',
+
+        'import_id',
         'active'
     ];
 
@@ -65,6 +66,21 @@ class Chip extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function import()
+    {
+        return $this->belongsTo(Import::class, 'import_id');
+    }
+
+    public function movements()
+    {
+        return $this->hasMany(ChipMovement::class, 'chip_id')
+            ->orderBy('executed_at', 'desc');
+    }
+
+
+
+
 
     public function device()
     {

@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AssignmentsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChipController;
+use App\Http\Controllers\ChipDistribucionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImportController;
@@ -145,8 +146,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [ChipController::class, 'deleteMultiple']);
 
         Route::post("/import", [ChipController::class, 'import']);
+        Route::get('/{id}/movements', [ChipController::class, 'movements']);
         // Route::post("/import", [ImportController::class, 'store']);
     });
+
+    Route::prefix("distribuciones")->group(function () {
+        Route::post('/updatePackageAssignment', [ChipDistribucionController::class, 'updatePackageAssignment']);
+    });
+
+
+
+
+
     // Ruta para la importación de chips
     // Route::prefix("chips")->post('import', [ImportController::class, 'store']);
 
@@ -155,6 +166,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas para la gestión de asignaciones
     Route::post('assignments', [AssignmentsController::class, 'assign']);
+
+
+
+
+
+
+
 
     // Route::prefix("personalInfo")->group(function () {
     //     Route::get("/", [PersonalInfoController::class, 'index']);
