@@ -153,6 +153,13 @@ class ChipController extends Controller
 
         DB::beginTransaction();
         try {
+            //insertar en la tabla Imports
+            Log::error(json_encode($request[0]));
+            $importController = new ImportController();
+            $importController->createOrUpdate($request[0]['fileData']);
+
+
+
             $rowsToInsert = [];
 
             foreach ($data as $index => $row) {

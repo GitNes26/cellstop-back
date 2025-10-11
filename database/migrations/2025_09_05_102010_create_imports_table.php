@@ -13,8 +13,13 @@ return new class extends Migration
     {
         Schema::create('imports', function (Blueprint $table) {
             $table->id();
-            $table->string('file_name', 255);
-            $table->enum('file_type', ['imp', 'int']);
+            $table->string('name');
+            $table->string('type')->nullable();
+            // $table->enum('file_type', ['imp', 'int']);
+            $table->bigInteger('size')->nullable();
+            $table->integer("last_modified");
+            $table->string('path')->nullable();
+            $table->text('notes')->nullable();
             $table->foreignId('uploaded_by')->constrained('users', 'id'); // quién subió
             $table->boolean('active')->default(true);
             $table->timestamps();

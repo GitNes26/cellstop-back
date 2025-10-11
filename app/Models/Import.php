@@ -21,7 +21,22 @@ class Import extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = ['file_name', 'file_type', 'uploaded_by', 'active'];
+    // protected $fillable = ['file_name', 'file_type', 'uploaded_by', 'active'];
+    protected $fillable = [
+        'name',
+        'type',
+        'size',
+        'last_modified',
+        'path',
+        'notes',
+        'uploaded_by',
+        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+        'last_modified' => 'integer',
+    ];
 
 
     /**
