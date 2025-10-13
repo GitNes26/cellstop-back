@@ -52,10 +52,13 @@ class Lote extends Model
     {
         return $this->belongsTo(VW_User::class, 'seller_id');
     }
-
     public function creator()
     {
         return $this->belongsTo(VW_User::class, 'created_by');
+    }
+    public function details()
+    {
+        return $this->hasMany(LoteDetail::class, 'lote_id');
     }
 
 

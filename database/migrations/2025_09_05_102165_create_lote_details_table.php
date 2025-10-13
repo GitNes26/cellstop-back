@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('chip_distribucion', function (Blueprint $table) {
+        Schema::create('lote_details', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('lote_id')->constrained('lotes', 'id')->onDelete('cascade');
             $table->foreignId('chip_id')->constrained('chips', 'id')->onDelete('cascade');
-            $table->foreignId('seller_id')->constrained('users', 'id')->onDelete('cascade');
-            $table->unsignedBigInteger('lote_id')->nullable(); // Si se asignan por lote
             $table->timestamp('assigned_at')->useCurrent();
             $table->foreignId('assigned_by')->constrained('users', 'id')->onDelete('cascade')->comment("usuario que asigno el chip"); // admin o supervisor
 
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chip_distribucion');
+        Schema::dropIfExists('lote_details');
     }
 };

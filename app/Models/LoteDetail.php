@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ChipDistribucion extends Model
+class LoteDetail extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -22,10 +22,8 @@ class ChipDistribucion extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'chip_id',
-        'seller_id',
-        'chip_id',
         'lote_id',
+        'chip_id',
         'assigned_at',
         'assigned_by',
         'active'
@@ -35,7 +33,7 @@ class ChipDistribucion extends Model
      * Nombre de la tabla asociada al modelo.
      * @var string
      */
-    protected $table = 'chip_distribucion';
+    protected $table = 'lote_details';
 
     /**
      * LlavePrimaria asociada a la tabla.
@@ -44,17 +42,17 @@ class ChipDistribucion extends Model
     protected $primaryKey = 'id';
 
 
-    public function seller()
+    public function lote()
     {
-        return $this->belongsTo(VW_User::class, 'seller_id');
+        return $this->belongsTo(Lote::class, 'lote_id');
     }
-    public function assignedBy()
+    public function chip()
+    {
+        return $this->belongsTo(Chip::class, 'chip_id');
+    }
+    public function assigner()
     {
         return $this->belongsTo(VW_User::class, 'assigned_by');
-    }
-    public function details()
-    {
-        return $this->hasMany(ChipDistributionDetail::class, 'distribution_id');
     }
 
 

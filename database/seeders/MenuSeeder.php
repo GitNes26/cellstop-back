@@ -120,6 +120,11 @@ class MenuSeeder extends Seeder
                         'url' => '/app/catalogos/lotes',
                         'icon' => 'Inventory2Rounded',
                     ],
+                    [
+                        'menu' => 'Puntos de venta',
+                        'url' => '/app/catalogos/puntos-de-venta',
+                        'icon' => 'Storefront',
+                    ],
                 ],
             ],
         ];

@@ -9,6 +9,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LoteController;
+use App\Http\Controllers\LoteDetailController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersonalInfoController;
@@ -161,8 +162,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [LoteController::class, 'deleteMultiple']);
     });
 
-    Route::prefix("distribuciones")->group(function () {
-        Route::post('/updatePackageAssignment', [ChipDistribucionController::class, 'updatePackageAssignment']);
+    Route::prefix("loteDetails")->group(function () {
+        Route::get("/", [LoteDetailController::class, 'index']);
+        Route::get("/selectIndex", [LoteDetailController::class, 'selectIndex']);
+        Route::get("/id/{id}", [LoteDetailController::class, 'show']);
+        Route::get("/showByLote/{loteId}", [LoteDetailController::class, 'showByLote']);
+        Route::post('/updateLoteAssignment', [LoteDetailController::class, 'updateLoteAssignment']);
     });
 
 

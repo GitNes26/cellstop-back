@@ -273,7 +273,7 @@ class ChipController extends Controller
             $insertedCount = 0;
 
             foreach ($data as $index => $row) {
-                Log::error("el row:" . json_encode($row));
+                // Log::error("el row:" . json_encode($row));
                 // Crear chip
                 $chip = Chip::create([
                     "product_id" => 1,

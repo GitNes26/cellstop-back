@@ -77,7 +77,11 @@ class Chip extends Model
         return $this->hasMany(ChipMovement::class, 'chip_id')
             ->orderBy('executed_at', 'desc');
     }
-
+    // 🔹 Relación con LoteDetail (si el chip pertenece a un lote)
+    public function loteDetails()
+    {
+        return $this->hasMany(LoteDetail::class, 'chip_id');
+    }
 
 
 
