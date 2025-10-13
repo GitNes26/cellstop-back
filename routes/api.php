@@ -8,6 +8,7 @@ use App\Http\Controllers\ChipDistribucionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersonalInfoController;
@@ -148,6 +149,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post("/import", [ChipController::class, 'import']);
         Route::get('/{id}/movements', [ChipController::class, 'movements']);
         // Route::post("/import", [ImportController::class, 'store']);
+    });
+
+    Route::prefix("lotes")->group(function () {
+        Route::get("/", [LoteController::class, 'index']);
+        Route::get("/selectIndex", [LoteController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [LoteController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [LoteController::class, 'show']);
+        Route::get("/delete/{id}", [LoteController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [LoteController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [LoteController::class, 'deleteMultiple']);
     });
 
     Route::prefix("distribuciones")->group(function () {

@@ -46,11 +46,11 @@ class ChipDistribucion extends Model
 
     public function seller()
     {
-        return $this->belongsTo(VW_Employee::class, 'seller_id');
+        return $this->belongsTo(VW_User::class, 'seller_id');
     }
     public function assignedBy()
     {
-        return $this->belongsTo(User::class, 'assigned_by');
+        return $this->belongsTo(VW_User::class, 'assigned_by');
     }
     public function details()
     {

@@ -70,7 +70,7 @@ class Employee extends Model
 
     public function user()
     {   //primero se declara FK y despues la PK del modelo asociado
-        return $this->hasOne(User::class, 'employee_id');
+        return $this->hasOne(VW_User::class, 'employee_id');
     }
 
     public function getFullNameAttribute()

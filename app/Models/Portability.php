@@ -45,14 +45,14 @@ class Portability extends Model
     protected $primaryKey = 'id';
 
 
-public function chip()
+    public function chip()
     {
         return $this->belongsTo(Chip::class);
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(VW_User::class);
     }
 
 

@@ -20,33 +20,33 @@ class ChipDistribucionController extends Controller
 
         try {
             // Validación estilo createOrUpdate
-            $validator = $this->validateAvailableData($request, 'chip_distribuciones', [
-                [
-                    'field' => 'seller_id',
-                    'label' => 'Vendedor',
-                    'rules' => ['required', 'integer', 'exists:users,id'],
-                    'messages' => [
-                        'required' => 'El vendedor es obligatorio.',
-                        'integer' => 'El ID del vendedor debe ser un número.',
-                        'exists' => 'El vendedor no existe.'
-                    ]
-                ],
-                [
-                    'field' => 'chip_ids',
-                    'label' => 'Chips',
-                    'rules' => ['required', 'array'],
-                    'messages' => [
-                        'required' => 'Debe seleccionar al menos un chip.',
-                        'array' => 'Los chips deben enviarse en un array.'
-                    ]
-                ]
-            ]);
+            // $validator = $this->validateAvailableData($request, 'chip_distribuciones', [
+            //     [
+            //         'field' => 'seller_id',
+            //         'label' => 'Vendedor',
+            //         'rules' => ['required', 'integer', 'exists:users,id'],
+            //         'messages' => [
+            //             'required' => 'El vendedor es obligatorio.',
+            //             'integer' => 'El ID del vendedor debe ser un número.',
+            //             'exists' => 'El vendedor no existe.'
+            //         ]
+            //     ],
+            //     [
+            //         'field' => 'chip_ids',
+            //         'label' => 'Chips',
+            //         'rules' => ['required'],
+            //         'messages' => [
+            //             'required' => 'Debe seleccionar al menos un chip.',
+            //             // 'array' => 'Los chips deben enviarse en un array.'
+            //         ]
+            //     ]
+            // ]);
 
-            if ($validator->fails()) {
-                $response->data = ObjResponse::CatchResponse($validator->errors());
-                $response->data["message"] = "Error de validación";
-                return response()->json($response);
-            }
+            // if ($validator->fails()) {
+            //     $response->data = ObjResponse::CatchResponse($validator->errors());
+            //     $response->data["message"] = "Error de validación";
+            //     return response()->json($response);
+            // }
 
             $authUser = auth()->user();
             $chipIds = $request->input('chip_ids', []);

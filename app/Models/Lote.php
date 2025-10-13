@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Import extends Model
+class Lote extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -21,21 +21,16 @@ class Import extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    // protected $fillable = ['file_name', 'file_type', 'uploaded_by', 'active'];
     protected $fillable = [
-        'name',
-        'type',
-        'size',
-        'last_modified',
-        'path',
-        'notes',
-        'uploaded_by',
-        'active',
+        "lote",
+        'seller_id',
+        'description',
+        'created_by',
+        'active'
     ];
 
     protected $casts = [
         'active' => 'boolean',
-        'last_modified' => 'integer',
     ];
 
 
@@ -43,7 +38,7 @@ class Import extends Model
      * Nombre de la tabla asociada al modelo.
      * @var string
      */
-    protected $table = 'imports';
+    protected $table = 'lotes';
 
     /**
      * LlavePrimaria asociada a la tabla.
@@ -53,14 +48,14 @@ class Import extends Model
 
 
 
-    public function uploader()
+    public function seller()
     {
-        return $this->belongsTo(VW_User::class, 'uploaded_by');
+        return $this->belongsTo(VW_User::class, 'seller_id');
     }
 
-    public function chips()
+    public function creator()
     {
-        return $this->hasMany(Chip::class);
+        return $this->belongsTo(VW_User::class, 'created_by');
     }
 
 
@@ -77,4 +72,5 @@ class Import extends Model
      * @var array
      */
     // protected $appends = ['full_name', 'full_name_reverse'];
+
 }

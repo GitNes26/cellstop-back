@@ -51,8 +51,8 @@ class Role extends Model
      */
     public function users()
     {
-        return $this->hasMany(User::class);
-        // return $this->hasMany(User::class, 'role_id', 'id'); //primero se declara FK y despues la PK
+        return $this->hasMany(VW_User::class);
+        // return $this->hasMany(VW_User::class, 'role_id', 'id'); //primero se declara FK y despues la PK
     }
 
     /**

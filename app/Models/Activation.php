@@ -22,7 +22,7 @@ class Activation extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-       'chip_id',
+        'chip_id',
         'user_id',
         'activation_type',
         'activation_date',
@@ -52,7 +52,7 @@ class Activation extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(VW_User::class);
     }
 
 

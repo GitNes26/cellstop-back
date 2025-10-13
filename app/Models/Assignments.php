@@ -46,7 +46,7 @@ class Assignments extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(VW_User::class);
     }
 
     public function product()

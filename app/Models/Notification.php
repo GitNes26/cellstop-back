@@ -25,6 +25,6 @@ class Notification extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(VW_User::class, 'created_by');
     }
 }

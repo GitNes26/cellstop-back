@@ -115,6 +115,11 @@ class MenuSeeder extends Seeder
                         'url' => '/app/catalogos/chips',
                         'icon' => 'SimCardRounded',
                     ],
+                    [
+                        'menu' => 'Lotes',
+                        'url' => '/app/catalogos/lotes',
+                        'icon' => 'Inventory2Rounded',
+                    ],
                 ],
             ],
         ];

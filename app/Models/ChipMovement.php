@@ -32,6 +32,6 @@ class ChipMovement extends Model
 
     public function executer()
     {
-        return $this->belongsTo(User::class, 'executed_by');
+        return $this->belongsTo(VW_User::class, 'executed_by');
     }
 }

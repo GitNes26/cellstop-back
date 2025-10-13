@@ -104,11 +104,12 @@ class Controller extends BaseController
      * @param int|null $id ID del registro a excluir de la validación (para actualizaciones).
      * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function validateAvailableData(Request $request, string $table, array $fields, $id = null)
+    public function validateAvailableData(Request $request, string $table, array $fields, $id = null, bool $validateUnique = true)
     {
         $rules = [];
         $messages = [];
 
+        $index = 0;
         foreach ($fields as $field) {
             $field = $field['field'];
             $label = $field['label'] ?? $field;
@@ -118,8 +119,11 @@ class Controller extends BaseController
             $fieldRules = array_merge(
                 ['required'],
                 $extraRules,
-                ["unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1']
             );
+            // Solo agrega la regla unique si se solicita
+            if ($validateUnique && $index == 0) {
+                $fieldRules[] = "unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1';
+            }
             $rules[$field] = $fieldRules;
 
             $messages["$field.required"] = "El campo $label es obligatorio.";
@@ -127,6 +131,7 @@ class Controller extends BaseController
             foreach ($extraMessages as $rule => $msg) {
                 $messages["$field.$rule"] = $msg;
             }
+            $index++;
         }
 
         return \Validator::make($request->all(), $rules, $messages);
