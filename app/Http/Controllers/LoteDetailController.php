@@ -130,7 +130,15 @@ class LoteDetailController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         try {
-            $lote = LoteDetail::with(['lote.seller', 'chip', 'assigner'])->where("lote_id", $loteId)->get();
+            $query = LoteDetail::with(['lote.seller', 'chip', 'assigner'])
+                ->where("lote_id", $loteId);
+
+            // 🔍 Loguear SQL generado
+            // Log::info("showByLote ~ SQL: " . $query->toSql(), $query->getBindings());
+
+            // Luego ejecutar la consulta
+            $lote = $query->get();
+
             if ($internal) return $lote;
 
             $response->data = ObjResponse::SuccessResponse();

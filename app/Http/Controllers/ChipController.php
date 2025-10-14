@@ -387,7 +387,7 @@ class ChipController extends Controller
     // venta
     ChipMovementService::log(
         $chip->id,
-        'Venta final',
+        'Vendido',
         'Chip vendido a cliente final',
         $seller->name ?? 'Stock',
         'Cliente final'

@@ -14,9 +14,12 @@ return new class extends Migration
         Schema::create('points_of_sale', function (Blueprint $table) {
             $table->id();
             $table->string('name', 150);
-            $table->text('address')->nullable();
             $table->string('contact_name', 100)->nullable();
             $table->string('contact_phone', 20)->nullable();
+            $table->text('address')->nullable();
+            $table->decimal('lat', 10, 8)->nullable();
+            $table->decimal('lon', 11, 8)->nullable();
+            $table->text('ubication')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

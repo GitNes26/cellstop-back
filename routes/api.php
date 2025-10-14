@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\ActivationController;
-use App\Http\Controllers\AssignmentsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChipController;
 use App\Http\Controllers\ChipDistribucionController;
@@ -13,6 +12,7 @@ use App\Http\Controllers\LoteDetailController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersonalInfoController;
+use App\Http\Controllers\PointOfSaleController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
@@ -170,6 +170,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/updateLoteAssignment', [LoteDetailController::class, 'updateLoteAssignment']);
     });
 
+    Route::prefix("pointsOfSale")->group(function () {
+        Route::get("/", [PointOfSaleController::class, 'index']);
+        Route::get("/selectIndex", [PointOfSaleController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [PointOfSaleController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [PointOfSaleController::class, 'show']);
+        Route::get("/delete/{id}", [PointOfSaleController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [PointOfSaleController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [PointOfSaleController::class, 'deleteMultiple']);
+    });
+
 
 
 
@@ -180,8 +190,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas para la gestión de activaciones
     Route::post('activations', [ActivationController::class, 'store']);
 
-    // Rutas para la gestión de asignaciones
-    Route::post('assignments', [AssignmentsController::class, 'assign']);
+    // // Rutas para la gestión de asignaciones
+    // Route::post('assignments', [AssignmentsController::class, 'assign']);
 
 
 

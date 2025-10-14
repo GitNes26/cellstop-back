@@ -67,9 +67,9 @@ class User extends Authenticatable
         return $this->belongsTo(VW_Employee::class, 'employee_id', 'id');
     }
 
-    public function assignments()
+    public function chip()
     {
-        return $this->hasMany(Assignment::class);
+        return $this->hasMany(LoteDetail::class);
     }
 
     public function sales()

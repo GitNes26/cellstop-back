@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Assignments extends Model
+class PointOfSale extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -21,21 +21,14 @@ class Assignments extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = [
-        'user_id',
-        'product_id',
-        'status',
-        'assigned_at',
-        'returned_at',
-        'active'
-    ];
+    protected $fillable = ['name', 'contact_name', 'contact_phone', 'address', 'lat', 'lon', 'ubication', 'active'];
 
 
     /**
      * Nombre de la tabla asociada al modelo.
      * @var string
      */
-    protected $table = 'assignments';
+    protected $table = 'points_of_sale';
 
     /**
      * LlavePrimaria asociada a la tabla.
@@ -43,22 +36,10 @@ class Assignments extends Model
      */
     protected $primaryKey = 'id';
 
-
-    public function user()
+    public function sales()
     {
-        return $this->belongsTo(VW_User::class);
+        return $this->hasMany(Sale::class, 'pos_id');
     }
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function sale()
-    {
-        return $this->hasOne(Sale::class);
-    }
-
 
     /**
      * Valores defualt para los campos especificados.

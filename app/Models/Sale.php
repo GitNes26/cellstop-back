@@ -22,14 +22,14 @@ class Sale extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'assignment_id',
-        'user_id',
+        'chip_id',
+        'seller_id',
         'pos_id',
         'buyer_name',
         'buyer_phone',
-        'sale_date',
-        'latitude',
-        'longitude',
+        'lat',
+        'lon',
+        'ubication',
         'evidence_photo',
         'status',
         'active'
@@ -49,14 +49,14 @@ class Sale extends Model
     protected $primaryKey = 'id';
 
 
-    public function assignment()
+    public function chip()
     {
-        return $this->belongsTo(Assignment::class);
+        return $this->belongsTo(Chip::class);
     }
 
-    public function vendor()
+    public function seller()
     {
-        return $this->belongsTo(VW_User::class, 'user_id');
+        return $this->belongsTo(VW_User::class, 'seller_id');
     }
 
     public function pointOfSale()
