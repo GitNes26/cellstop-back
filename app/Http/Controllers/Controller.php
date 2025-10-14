@@ -104,7 +104,7 @@ class Controller extends BaseController
      * @param int|null $id ID del registro a excluir de la validación (para actualizaciones).
      * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function validateAvailableData(Request $request, string $table, array $fields, $id = null, bool $validateUnique = true)
+    public function validateAvailableData(Request $request, string $table, array $fields, $id = null, bool $validateUniqueFirstField = true)
     {
         $rules = [];
         $messages = [];
@@ -121,7 +121,7 @@ class Controller extends BaseController
                 $extraRules,
             );
             // Solo agrega la regla unique si se solicita
-            if ($validateUnique && $index == 0) {
+            if ($validateUniqueFirstField && $index == 0) {
                 $fieldRules[] = "unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1';
             }
             $rules[$field] = $fieldRules;

@@ -16,6 +16,7 @@ use App\Http\Controllers\PointOfSaleController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
 use App\Models\ObjResponse;
 use Illuminate\Http\Request;
@@ -178,6 +179,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/delete/{id}", [PointOfSaleController::class, 'delete']);
         Route::get("/disEnable/{id}/{active}", [PointOfSaleController::class, 'disEnable']);
         Route::get("/deleteMultiple", [PointOfSaleController::class, 'deleteMultiple']);
+    });
+
+    Route::prefix("sales")->group(function () {
+        Route::get("/", [SaleController::class, 'index']);
+        Route::get("/selectIndex", [SaleController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [SaleController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [SaleController::class, 'show']);
+        Route::get("/delete/{id}", [SaleController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [SaleController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [SaleController::class, 'deleteMultiple']);
     });
 
 

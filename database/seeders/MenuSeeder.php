@@ -125,6 +125,11 @@ class MenuSeeder extends Seeder
                         'url' => '/app/catalogos/puntos-de-venta',
                         'icon' => 'Storefront',
                     ],
+                    [
+                        'menu' => 'Venta',
+                        'url' => '/app/catalogos/ventas',
+                        'icon' => 'PointOfSale',
+                    ],
                 ],
             ],
         ];
