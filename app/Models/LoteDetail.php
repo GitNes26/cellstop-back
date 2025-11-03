@@ -23,7 +23,7 @@ class LoteDetail extends Model
      */
     protected $fillable = [
         'lote_id',
-        'chip_id',
+        'product_id',
         'assigned_at',
         'assigned_by',
         'active'
@@ -46,9 +46,9 @@ class LoteDetail extends Model
     {
         return $this->belongsTo(Lote::class, 'lote_id');
     }
-    public function chip()
+    public function product()
     {
-        return $this->belongsTo(Chip::class, 'chip_id');
+        return $this->belongsTo(Product::class, 'product_id');
     }
     public function assigner()
     {

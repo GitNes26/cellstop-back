@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Imports\ChipImport;
+use App\Imports\ProductImport;
 use App\Models\Import;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
 
-class ChipImportService
+class ProductImportService
 {
    public function handleImport($file, $fileType)
    {
@@ -21,7 +21,7 @@ class ChipImportService
       ]);
 
       if ($fileType === 'imp') {
-         Excel::import(new ChipImport($import->id), $file);
+         Excel::import(new ProductImport($import->id), $file);
       }
 
       return $import;

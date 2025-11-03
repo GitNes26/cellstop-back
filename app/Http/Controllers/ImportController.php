@@ -230,7 +230,7 @@ class ImportController extends Controller
 
         // Si es tipo "imp"
         if ($request->file_type === 'imp') {
-            Excel::import(new ChipImport($import->id), $file);
+            Excel::import(new ProductImport($import->id), $file);
         }
 
         // Si es tipo "int"

@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('lote_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lote_id')->constrained('lotes', 'id')->onDelete('cascade');
-            $table->foreignId('chip_id')->constrained('chips', 'id')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('products', 'id')->onDelete('cascade');
             $table->timestamp('assigned_at')->useCurrent();
-            $table->foreignId('assigned_by')->constrained('users', 'id')->onDelete('cascade')->comment("usuario que asigno el chip"); // admin o supervisor
+            $table->foreignId('assigned_by')->constrained('users', 'id')->onDelete('cascade')->comment("usuario que asigno el producto"); // admin o supervisor
 
             $table->boolean('active')->default(true);
             $table->timestamps();

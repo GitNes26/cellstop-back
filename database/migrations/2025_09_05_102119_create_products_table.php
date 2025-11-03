@@ -14,10 +14,6 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
 
-            // 🔗 Relaciones
-            $table->foreignId('import_id')->nullable()->constrained('imports', 'id');
-            $table->foreignId('created_by')->nullable()->constrained('users', 'id');
-
             // 🧾 Nuevos campos
             $table->string('region')->nullable();                        // Región
             $table->string('celular')->nullable();                       // Celular
@@ -43,6 +39,12 @@ return new class extends Migration
             // 🔧 Control interno
             $table->enum('location_status', ['Stock', 'Asignado', 'Distribuido'])->default('stock');
             $table->enum('activation_status', ['Virgen', 'Pre activado', 'Activado', 'Caducado'])->default('Virgen');
+
+                  // 🔗 Relaciones
+            $table->foreignId('product_type_id')->nullable()->constrained('product_types', 'id');
+            $table->foreignId('import_id')->nullable()->constrained('imports', 'id');
+            $table->foreignId('created_by')->nullable()->constrained('users', 'id');
+            
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

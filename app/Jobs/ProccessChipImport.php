@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Imports\ChipImport;
+use App\Imports\ProductImport;
 use App\Models\Import;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Bus\Queueable;
@@ -11,7 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class ProcessChipImport implements ShouldQueue
+class ProcessProductImport implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -28,7 +28,7 @@ class ProcessChipImport implements ShouldQueue
 
         if ($import) {
             $filePath = storage_path('app/imports/' . $import->file_name);
-            Excel::import(new ChipImport($this->importId), $filePath);
+            Excel::import(new ProductImport($this->importId), $filePath);
         }
     }
 }

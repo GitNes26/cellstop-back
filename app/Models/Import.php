@@ -58,9 +58,9 @@ class Import extends Model
         return $this->belongsTo(VW_User::class, 'uploaded_by');
     }
 
-    public function chips()
+    public function products()
     {
-        return $this->hasMany(Chip::class);
+        return $this->hasMany(Product::class);
     }
 
 

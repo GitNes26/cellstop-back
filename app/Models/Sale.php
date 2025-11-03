@@ -22,7 +22,7 @@ class Sale extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'chip_id',
+        'product_id',
         'seller_id',
         'pos_id',
         'buyer_name',
@@ -49,9 +49,9 @@ class Sale extends Model
     protected $primaryKey = 'id';
 
 
-    public function chip()
+    public function product()
     {
-        return $this->belongsTo(Chip::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function seller()

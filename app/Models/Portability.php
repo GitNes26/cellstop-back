@@ -22,7 +22,7 @@ class Portability extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'chip_id',
+        'product_id',
         'user_id',
         'phone_number',
         'activation_date',
@@ -45,9 +45,9 @@ class Portability extends Model
     protected $primaryKey = 'id';
 
 
-    public function chip()
+    public function product()
     {
-        return $this->belongsTo(Chip::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function user()

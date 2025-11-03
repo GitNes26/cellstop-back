@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Device extends Model
+class ProductType extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -21,22 +21,13 @@ class Device extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = [
-        'product_id',
-        'imei',
-        'model',
-        'brand',
-        'color',
-        'chip_id',
-        'location_status',
-        'active'
-    ];
+    protected $fillable = ['product_type', 'description', 'status', 'import_id', 'active'];
 
     /**
      * Nombre de la tabla asociada al modelo.
      * @var string
      */
-    protected $table = 'devices';
+    protected $table = 'product_types';
 
     /**
      * LlavePrimaria asociada a la tabla.
@@ -44,15 +35,16 @@ class Device extends Model
      */
     protected $primaryKey = 'id';
 
+
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasOne(Product::class);
+    }
+    public function fileImport()
+    {
+        return $this->belongsTo(Import::class);
     }
 
-    public function chip()
-    {
-        return $this->belongsTo(Chip::class);
-    }
 
     /**
      * Valores defualt para los campos especificados.

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('portabilities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('chip_id')->nullable()->constrained('chips', 'id');
+            $table->foreignId('product_id')->nullable()->constrained('products', 'id');
             $table->foreignId('user_id')->nullable()->constrained('users', 'id'); //vendedor
             $table->string('phone_number', 20)->nullable();
             $table->timestamp('activation_date')->nullable();

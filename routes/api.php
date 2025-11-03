@@ -2,8 +2,7 @@
 
 use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ChipController;
-use App\Http\Controllers\ChipDistribucionController;
+
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImportController;
@@ -15,6 +14,8 @@ use App\Http\Controllers\PersonalInfoController;
 use App\Http\Controllers\PointOfSaleController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductDistribucionController;
+use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
@@ -133,23 +134,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas para la gestión de productos
-    Route::apiResource('products', ProductController::class);
+    Route::apiResource('product_types', ProductTypeController::class);
 
-    // Rutas para la gestión de chips
-    // Route::apiResource('chips', ChipController::class);
-    Route::prefix("chips")->group(function () {
-        Route::get("/", [ChipController::class, 'index']);
-        Route::get("/selectIndexByRole/{role_id}", [ChipController::class, 'selectIndexByRole']);
-        Route::get("/selectIndex", [ChipController::class, 'selectIndex']);
-        Route::post("/store", [ChipController::class, 'store']);
-        Route::post("/update/{id?}", [ChipController::class, 'update']);
-        Route::get("/id/{id}", [ChipController::class, 'show']);
-        Route::get("/delete/{id}", [ChipController::class, 'delete']);
-        Route::get("/disEnable/{id}/{active}", [ChipController::class, 'disEnable']);
-        Route::get("/deleteMultiple", [ChipController::class, 'deleteMultiple']);
+    // Rutas para la gestión de productos
+    // Route::apiResource('products', ProductController::class);
+    Route::prefix("products")->group(function () {
+        Route::get("/", [ProductController::class, 'index']);
+        Route::get("/selectIndexByRole/{role_id}", [ProductController::class, 'selectIndexByRole']);
+        Route::get("/selectIndex", [ProductController::class, 'selectIndex']);
+        Route::post("/store", [ProductController::class, 'store']);
+        Route::post("/update/{id?}", [ProductController::class, 'update']);
+        Route::get("/id/{id}", [ProductController::class, 'show']);
+        Route::get("/delete/{id}", [ProductController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [ProductController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [ProductController::class, 'deleteMultiple']);
 
-        Route::post("/import", [ChipController::class, 'import']);
-        Route::get('/{id}/movements', [ChipController::class, 'movements']);
+        Route::post("/import", [ProductController::class, 'import']);
+        Route::get('/{id}/movements', [ProductController::class, 'movements']);
         // Route::post("/import", [ImportController::class, 'store']);
     });
 
@@ -195,8 +196,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    // Ruta para la importación de chips
-    // Route::prefix("chips")->post('import', [ImportController::class, 'store']);
+    // Ruta para la importación de productos
+    // Route::prefix("products")->post('import', [ImportController::class, 'store']);
 
     // Rutas para la gestión de activaciones
     Route::post('activations', [ActivationController::class, 'store']);

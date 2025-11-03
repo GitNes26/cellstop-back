@@ -21,7 +21,62 @@ class Product extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = ['product_type', 'description', 'status', 'import_id', 'active'];
+    protected $fillable = [
+        'region',
+        'celular',
+        'iccid',
+        'imei',
+        'fecha',
+        'tramite',
+        'estatus',
+        'comentario',
+        'fza_vta_prepago',
+        'fza_vta_padre',
+        'usuario_externo',
+        'folio',
+        'producto',
+        'num_orden',
+        'estatus_orden',
+        'motivo_error',
+        'tipo_sim',
+        'model',
+        'brand',
+        'color',
+        'location_status',
+        'activation_status',
+
+        'product_type_id',
+        'import_id',
+        'created_by',
+        'active',
+    ];
+    // protected $fillable = [
+    //     'product_id',
+
+    //     'filtro',
+    //     'telefono',
+    //     'imei',
+    //     'iccid',
+    //     'estatus_lin',
+    //     'movimiento',
+    //     'fecha_activ',
+    //     'fecha_prim_llam',
+    //     'fecha_dol',
+    //     'estatus_pago',
+    //     'motivo_estatus',
+    //     'monto_com',
+    //     'tipo_comision',
+    //     'evaluacion',
+    //     'fza_vta_pago',
+    //     'fecha_evaluacion',
+    //     'folio_factura',
+    //     'fecha_publicacion',
+    //     'location_status',
+    //     'activation_status',
+
+    //     'import_id',
+    //     'active'
+    // ];
 
     /**
      * Nombre de la tabla asociada al modelo.
@@ -36,21 +91,81 @@ class Product extends Model
     protected $primaryKey = 'id';
 
 
-    public function chip()
+    /* -------------------------------------------------------------
+     | 🔗 RELACIONES
+     |--------------------------------------------------------------*/
+
+    /**
+     * Tipo de producto al que pertenece este producto
+     */
+    public function productType()
     {
-        return $this->hasOne(Chip::class);
+        return $this->belongsTo(ProductType::class);
     }
 
-    public function device()
+    /**
+     * Importación a la que pertenece este producto (carga masiva)
+     */
+    public function import()
     {
-        return $this->hasOne(Device::class);
+        return $this->belongsTo(Import::class, 'import_id');
     }
 
-    public function fileImport()
+    /**
+     * Usuario que registró este producto
+     */
+    public function creator()
     {
-        return $this->belongsTo(Import::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Movimientos del producto (por ejemplo distribución o venta)
+     */
+    public function movements()
+    {
+        return $this->hasMany(ProductMovement::class, 'product_id');
+    }
+
+    /**
+     * Detalles de distribución de este producto
+     */
+    // public function distributionDetails()
+    // {
+    //     return $this->hasMany(ProductDistributionDetail::class, 'product_id');
+    // }
+
+    /**
+     * Bitácora de acciones relacionadas con el producto
+     */
+    // public function logs()
+    // {
+    //     return $this->morphMany(Log::class, 'loggable');
+    // }
+    // 🔹 Relación con LoteDetail (si el producto pertenece a un lote)
+    public function loteDetails()
+    {
+        return $this->hasMany(LoteDetail::class, 'product_id');
+    }
+
+    public function activations()
+    {
+        return $this->hasMany(Activation::class);
+    }
+
+    public function portabilities()
+    {
+        return $this->hasMany(Portability::class);
+    }
+
+    // protected $casts = [
+    //     'fecha_activ' => 'date',
+    //     'fecha_prim_llam' => 'date',
+    //     'fecha_dol' => 'date',
+    //     'fecha_evaluacion' => 'date',
+    //     'fecha_publicacion' => 'date',
+    //     'active' => 'boolean'
+    // ];
 
     /**
      * Valores defualt para los campos especificados.

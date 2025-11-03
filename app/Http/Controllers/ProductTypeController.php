@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale;
 use App\Models\ObjResponse;
+use App\Models\ProductType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class SaleController extends Controller
+class ProductTypeController extends Controller
 {
     /**
-     * Mostrar lista de ventas.
+     * Mostrar lista de productos.
      *
      * @return \Illuminate\Http\Response $response
      */
@@ -22,24 +22,18 @@ class SaleController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = Sale::with(['product', 'seller', 'pointOfSale'])
-                ->orderBy('id', 'desc');
-
-            if ($auth->role_id > 2) {
-                $list = $list->where("active", true);
-            }
-
+            $list = ProductType::orderBy('id', 'desc');
+            if ($auth->role_id > 2) $list = $list->where("active", true);
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de ventas.';
+            $response->data["message"] = 'Peticion satisfactoria | Lista de productos.';
             $response->data["result"] = $list;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ index ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ index ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
@@ -52,49 +46,45 @@ class SaleController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $list = Sale::where('active', true)
-                ->select('id', DB::raw("CONCAT(product_id,' - ',buyer_name) as label"))
-                ->orderBy('id', 'desc')
-                ->get();
+            $list = ProductType::where('active', true)
+                ->select('id as id', 'product_type as label')
+                ->orderBy('product_type', 'asc')->get();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de ventas.';
-            $response->data["alert_text"] = "Ventas encontradas";
+            $response->data["message"] = 'peticion satisfactoria | lista de productos.';
+            $response->data["alert_text"] = "Productos encontrados";
             $response->data["result"] = $list;
             $response->data["toast"] = false;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
     /**
-     * Crear o Actualizar venta.
+     * Crear o Actualizar producto.
      *
      * @param \Illuminate\Http\Request $request
      * @param Int $id
+     * 
      * @return \Illuminate\Http\Response $response
      */
     public function createOrUpdate(Request $request, Response $response, Int $id = null)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $validator = $this->validateAvailableData($request, 'sales', [
+            $validator = $this->validateAvailableData($request, 'product_types', [
                 [
-                    'field' => 'buyer_phone',
-                    'label' => 'Teléfono del comprador',
-                    'rules' => ['string', 'max:10', 'min:10'],
+                    'field' => 'product_type',
+                    'label' => 'Tipo de producto',
+                    'rules' => ['string'],
                     'messages' => [
-                        'string' => 'El número celular debe ser texto.',
-                        'max' => 'El número celular no puede tener más de 10 caracteres.',
-                        'min' => 'El número celular debe tener al menos 10 caracteres.',
+                        'string' => 'El tipo de producto debe ser texto.',
                     ]
                 ]
             ], $id);
-
             if ($validator->fails()) {
                 $response->data = ObjResponse::CatchResponse($validator->errors());
                 $response->data["message"] = "Error de validación";
@@ -102,40 +92,25 @@ class SaleController extends Controller
                 return response()->json($response);
             }
 
-            $sale = Sale::find($id);
-            if (!$sale) $sale = new Sale();
+            $product = ProductType::find($id);
+            if (!$product) $product = new ProductType();
 
-            $sale->fill($request->except(['evidence_photo_file']));
-            $sale->save();
-
-            // Subida de evidencia, si se manda archivo
-            if ($request->hasFile('evidence_photo_file')) {
-                $this->ImageUp(
-                    $request,
-                    'evidence_photo_file',
-                    "sales",
-                    $sale->id,
-                    'EVIDENCIA',
-                    $id == null ? true : false,
-                    "noImage.png",
-                    $sale
-                );
-            }
+            $product->fill($request->all());
+            $product->save();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = $id > 0 ? 'Petición satisfactoria | venta editada.' : 'Petición satisfactoria | venta registrada.';
-            $response->data["alert_text"] = $id > 0 ? "Venta editada" : "Venta registrada";
+            $response->data["message"] = $id > 0 ? 'peticion satisfactoria | producto editado.' : 'peticion satisfactoria | producto registrado.';
+            $response->data["alert_text"] = $id > 0 ? "Producto editado" : "Producto registrado";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
     /**
-     * Mostrar venta.
+     * Mostrar producto.
      *
      * @param   int $id
      * @param  \Illuminate\Http\Request $request
@@ -145,46 +120,45 @@ class SaleController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $sale = Sale::find($id);
-            if ($internal) return $sale;
+            $product = ProductType::find($id);
+            if ($internal) return $product;
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | venta encontrada.';
-            $response->data["result"] = $sale;
+            $response->data["message"] = 'peticion satisfactoria | producto encontrado.';
+            $response->data["result"] = $product;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ show ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ show ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
     /**
-     * "Eliminar" (cambiar estado activo=0) venta.
+     * "Eliminar" (cambiar estado activo=0) producto.
      *
      * @param  int $id
+     * @param  int $active
      * @return \Illuminate\Http\Response $response
      */
     public function delete(Response $response, Int $id)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            Sale::where('id', $id)
+            ProductType::where('id', $id)
                 ->update([
                     'active' => false,
                     'deleted_at' => date('Y-m-d H:i:s')
                 ]);
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | venta eliminada.";
-            $response->data["alert_text"] = "Venta eliminada";
+            $response->data["message"] = "peticion satisfactoria | producto eliminado.";
+            $response->data["alert_text"] = "Producto eliminado";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ delete ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ delete ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
@@ -192,28 +166,27 @@ class SaleController extends Controller
      * "Activar o Desactivar" (cambiar estado activo=1/0).
      *
      * @param  int $id
-     * @param  string $active
+     * @param  int $active
      * @return \Illuminate\Http\Response $response
      */
     public function disEnable(Response $response, Int $id, string $active)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            Sale::where('id', $id)
+            ProductType::where('id', $id)
                 ->update([
                     'active' => $active === "reactivar" ? 1 : 0
                 ]);
 
-            $description = $active == "reactivar" ? 'reactivada' : 'desactivada';
+            $description = $active == "reactivar" ? 'reactivado' : 'desactivado';
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | venta $description.";
-            $response->data["alert_text"] = "Venta $description";
+            $response->data["message"] = "peticion satisfactoria | producto $description.";
+            $response->data["alert_text"] = "Producto $description";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 
@@ -227,21 +200,21 @@ class SaleController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
+            // echo "$request->ids";
+            // $deleteIds = explode(',', $ids);
             $countDeleted = sizeof($request->ids);
-            Sale::whereIn('id', $request->ids)->update([
+            ProductType::whereIn('id', $request->ids)->update([
                 'active' => false,
                 'deleted_at' => date('Y-m-d H:i:s'),
             ]);
-
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = $countDeleted == 1 ? 'Petición satisfactoria | registro eliminado.' : "Petición satisfactoria | registros eliminados ($countDeleted).";
-            $response->data["alert_text"] = $countDeleted == 1 ? 'Registro eliminado' : "Registros eliminados ($countDeleted)";
+            $response->data["message"] = $countDeleted == 1 ? 'peticion satisfactoria | registro eliminado.' : "peticion satisfactoria | registros eliminados ($countDeleted).";
+            $response->data["alert_text"] = $countDeleted == 1 ? 'Registro eliminado' : "Registros eliminados  ($countDeleted)";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
-
         return response()->json($response, $response->data["status_code"]);
     }
 }

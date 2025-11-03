@@ -111,8 +111,13 @@ class MenuSeeder extends Seeder
                 'caption' => 'Gestión de Catalogos',
                 'items' => [
                     [
-                        'menu' => 'Chips',
-                        'url' => '/app/catalogos/chips',
+                        'menu' => 'Tipos de producto',
+                        'url' => '/app/catalogos/tipos-de-producto',
+                        'icon' => 'SimCardRounded',
+                    ],
+                    [
+                        'menu' => 'Productos',
+                        'url' => '/app/catalogos/productos',
                         'icon' => 'SimCardRounded',
                     ],
                     [

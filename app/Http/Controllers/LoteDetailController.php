@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Chip;
+use App\Models\Product;
 use App\Models\Lote;
 use App\Models\LoteDetail;
 use App\Models\ObjResponse;
 use App\Models\VW_User;
-use App\Services\ChipMovementService;
+use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +28,7 @@ class LoteDetailController extends Controller
         try {
             $auth = Auth::user();
 
-            $list = LoteDetail::with(['lote.seller', 'chip', 'assigner'])
+            $list = LoteDetail::with(['lote.seller', 'product', 'assigner'])
                 ->orderBy('id', 'desc');
 
             // Si el usuario no es administrador, sólo mostrar activos
@@ -104,7 +104,7 @@ class LoteDetailController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         try {
-            $lote = LoteDetail::with(['lote.seller', 'chip', 'assigner'])->find($id);
+            $lote = LoteDetail::with(['lote.seller', 'product', 'assigner'])->find($id);
             if ($internal) return $lote;
 
             $response->data = ObjResponse::SuccessResponse();
@@ -130,7 +130,7 @@ class LoteDetailController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         try {
-            $query = LoteDetail::with(['lote.seller', 'chip', 'assigner'])
+            $query = LoteDetail::with(['lote.seller', 'product', 'assigner'])
                 ->where("lote_id", $loteId);
 
             // 🔍 Loguear SQL generado
@@ -159,7 +159,7 @@ class LoteDetailController extends Controller
 
         try {
             // Validación estilo createOrUpdate
-            // $validator = $this->validateAvailableData($request, 'chip_distribuciones', [
+            // $validator = $this->validateAvailableData($request, 'product_distribuciones', [
             //     [
             //         'field' => 'seller_id',
             //         'label' => 'Vendedor',
@@ -171,12 +171,12 @@ class LoteDetailController extends Controller
             //         ]
             //     ],
             //     [
-            //         'field' => 'chip_ids',
-            //         'label' => 'Chips',
+            //         'field' => 'product_ids',
+            //         'label' => 'Productos',
             //         'rules' => ['required'],
             //         'messages' => [
-            //             'required' => 'Debe seleccionar al menos un chip.',
-            //             // 'array' => 'Los chips deben enviarse en un array.'
+            //             'required' => 'Debe seleccionar al menos un producto.',
+            //             // 'array' => 'Los productos deben enviarse en un array.'
             //         ]
             //     ]
             // ]);
@@ -189,83 +189,83 @@ class LoteDetailController extends Controller
 
             $authUser = auth()->user();
             $loteId = $request->input('lote_id');
-            $chipIds = $request->input('chip_ids', []);
+            $productIds = $request->input('product_ids', []);
             $lote = Lote::find($loteId);
             $seller = VW_User::find($lote->seller_id);
 
-            // Obtener chips actualmente asignados al vendedor
-            $currentChips = LoteDetail::where('lote_id', $loteId)->pluck('chip_id')->toArray();
+            // Obtener productos actualmente asignados al vendedor
+            $currentProducts = LoteDetail::where('lote_id', $loteId)->pluck('product_id')->toArray();
 
-            // Chips a asignar y desasignar
-            $chipsToAssign = array_diff($chipIds, $currentChips);
-            $chipsToUnassign = array_diff($currentChips, $chipIds);
+            // Productos a asignar y desasignar
+            $productsToAssign = array_diff($productIds, $currentProducts);
+            $productsToUnassign = array_diff($currentProducts, $productIds);
 
             $assigned = [];
             $unassigned = [];
 
             DB::beginTransaction();
 
-            // DESASIGNAR chips removidos
-            if (!empty($chipsToUnassign)) {
-                $chipsToRemove = LoteDetail::where('lote_id', $loteId)
-                    ->whereIn('chip_id', $chipsToUnassign)
+            // DESASIGNAR productos removidos
+            if (!empty($productsToUnassign)) {
+                $productsToRemove = LoteDetail::where('lote_id', $loteId)
+                    ->whereIn('product_id', $productsToUnassign)
                     ->get();
 
-                foreach ($chipsToRemove as $dist) {
-                    $chip = Chip::find($dist->chip_id);
-                    if ($chip && $chip->location_status === 'Asignado') {
-                        $origin = $chip->location_status;
-                        $chip->update(['location_status' => 'Stock']);
+                foreach ($productsToRemove as $dist) {
+                    $product = Product::find($dist->product_id);
+                    if ($product && $product->location_status === 'Asignado') {
+                        $origin = $product->location_status;
+                        $product->update(['location_status' => 'Stock']);
 
-                        ChipMovementService::log(
-                            $chip->id,
+                        ProductMovementService::log(
+                            $product->id,
                             'Desasignación',
-                            "Chip devuelto al almacén por {$authUser->username}",
+                            "Producto devuelto al almacén por {$authUser->username}",
                             $origin,
                             'Distribución'
                         );
 
-                        $unassigned[] = $chip->id;
+                        $unassigned[] = $product->id;
                     }
 
                     $dist->delete();
                 }
             }
 
-            // ASIGNAR chips nuevos
-            if (!empty($chipsToAssign)) {
-                $availableChips = Chip::whereIn('id', $chipsToAssign)->where('location_status', 'Stock')->get();
+            // ASIGNAR productos nuevos
+            if (!empty($productsToAssign)) {
+                $availableProducts = Product::whereIn('id', $productsToAssign)->where('location_status', 'Stock')->get();
 
-                foreach ($availableChips as $chip) {
+                foreach ($availableProducts as $product) {
                     LoteDetail::create([
                         'lote_id' => $loteId,
-                        'chip_id' => $chip->id,
+                        'product_id' => $product->id,
                         'assigned_at' => now(),
                         'assigned_by' => $authUser->id,
                         'active' => true
                     ]);
 
-                    $origin = $chip->location_status;
-                    $chip->update(['location_status' => 'Asignado']);
+                    $origin = $product->location_status;
+                    $product->update(['location_status' => 'Asignado']);
 
-                    ChipMovementService::log(
-                        $chip->id,
+                    ProductMovementService::log(
+                        $product->id,
                         'Asignación',
-                        "Chip asignado al vendedor {$seller->full_name}",
+                        "Producto asignado al vendedor {$seller->full_name}",
                         $origin,
                         'Distribución'
                     );
 
-                    $assigned[] = $chip->id;
+                    $assigned[] = $product->id;
                 }
             }
 
             DB::commit();
 
             // PREPARAR listados para TransferList
-            $allChips = Chip::whereIn('id', array_merge($chipIds, $currentChips))->get();
-            $left = $allChips->where('location_status', 'Stock')->map(fn($c) => $c->id)->values();
-            $right = LoteDetail::where('lote_id', $loteId)->pluck('chip_id');
+            $allProducts = Product::whereIn('id', array_merge($productIds, $currentProducts))->get();
+            $left = $allProducts->where('location_status', 'Stock')->map(fn($c) => $c->id)->values();
+            $right = LoteDetail::where('lote_id', $loteId)->pluck('product_id');
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = "Asignaciones actualizadas correctamente.";
@@ -277,7 +277,7 @@ class LoteDetailController extends Controller
             $response->data["total_unassigned"] = count($unassigned);
         } catch (\Throwable $th) {
             DB::rollBack();
-            Log::error("ChipController ~ updateLoteAssignment ~ " . $th->getMessage());
+            Log::error("ProductController ~ updateLoteAssignment ~ " . $th->getMessage());
             $response->data = ObjResponse::CatchResponse("Error al actualizar asignaciones -> " . $th->getMessage());
         }
 

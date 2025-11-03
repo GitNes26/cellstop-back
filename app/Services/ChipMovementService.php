@@ -2,19 +2,19 @@
 
 namespace App\Services;
 
-use App\Models\ChipMovement;
+use App\Models\ProductMovement;
 use Illuminate\Support\Facades\Auth;
 
-class ChipMovementService
+class ProductMovementService
 {
    /**
-    * Registra un movimiento en la bitácora de chips.
+    * Registra un movimiento en la bitácora de productos.
     */
-   public static function log($chipId, $action, $description = null, $origin = null, $destination = null)
+   public static function log($productId, $action, $description = null, $origin = null, $destination = null)
    {
       try {
-         ChipMovement::create([
-            'chip_id'     => $chipId,
+         ProductMovement::create([
+            'product_id'     => $productId,
             'action'      => $action,
             'description' => $description,
             'origin'      => $origin,
@@ -24,7 +24,7 @@ class ChipMovementService
             'active'      => true,
          ]);
       } catch (\Exception $e) {
-         \Log::error("Error al registrar movimiento de chip: " . $e->getMessage());
+         \Log::error("Error al registrar movimiento de producto: " . $e->getMessage());
       }
    }
 }

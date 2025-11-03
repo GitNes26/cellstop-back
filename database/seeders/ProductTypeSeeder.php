@@ -6,20 +6,24 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class ProductSeeder extends Seeder
+class ProductTypeSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        $products = [
+        $product_types = [
             [
-                "product_type" => "Chip",
+                "product_type" => "SIM",
                 "description" => "Chip SIM para dispositivos móviles."
             ],
             [
                 "product_type" => "Dispositivo",
+                "description" => "Dispositivo electrónico con chip integrado."
+            ],
+            [
+                "product_type" => "E-SIM",
                 "description" => "Dispositivo electrónico con chip integrado."
             ],
         ];
@@ -30,8 +34,8 @@ class ProductSeeder extends Seeder
                 'description' => $position['description'],
                 'created_at' => now(),
             ];
-        }, $products);
+        }, $product_types);
 
-        DB::table('products')->insert($data);
+        DB::table('product_types')->insert($data);
     }
 }

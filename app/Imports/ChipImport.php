@@ -2,12 +2,12 @@
 
 namespace App\Imports;
 
-use App\Models\Chip;
 use App\Models\Product;
+use App\Models\ProductType;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class ChipImport implements ToModel, WithHeadingRow
+class ProductImport implements ToModel, WithHeadingRow
 {
    protected $importId;
 
@@ -18,15 +18,15 @@ class ChipImport implements ToModel, WithHeadingRow
 
    public function model(array $row)
    {
-      // Crear producto tipo chip si no existe
-      $product = Product::firstOrCreate([
+      // Crear producto tipo producto si no existe
+      $product = ProductType::firstOrCreate([
          'product_type' => 'chip',
-         'description' => 'Chip automático desde importación',
+         'description' => 'Producto automático desde importación',
          'status' => 'activo',
          'active' => true
       ]);
 
-      return new Chip([
+      return new Product([
          'product_id' => $product->id,
 
          'filtro'          => $row['filtro'] ?? null,
