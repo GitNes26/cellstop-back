@@ -134,7 +134,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas para la gestión de productos
-    Route::apiResource('product_types', ProductTypeController::class);
+    // Route::apiResource('product_types', ProductTypeController::class);
+    Route::prefix("productTypes")->group(function () {
+        Route::get("/", [ProductTypeController::class, 'index']);
+        Route::get("/selectIndexByRole/{role_id}", [ProductTypeController::class, 'selectIndexByRole']);
+        Route::get("/selectIndex", [ProductTypeController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [ProductTypeController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [ProductTypeController::class, 'show']);
+        Route::get("/delete/{id}", [ProductTypeController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [ProductTypeController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [ProductTypeController::class, 'deleteMultiple']);
+    });
 
     // Rutas para la gestión de productos
     // Route::apiResource('products', ProductController::class);

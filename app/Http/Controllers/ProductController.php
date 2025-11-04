@@ -269,24 +269,29 @@ class ProductController extends Controller
             $import = $importController->createOrUpdate($request[0]['fileData'], null, DB::class);
             $product_type = $request[0]['product_type'];
 
+            $insertBatch = [];
             $insertedCount = 0;
             $duplicatedIccids = [];
 
-            foreach ($data as $index => $row) {
+            // Obtener ICCIDs ya existentes para evitar duplicados
+            $existingIccids = Product::whereIn(
+                'iccid',
+                array_filter(array_column($data, 'ICCID'))
+            )->pluck('iccid')->toArray();
+
+            foreach ($data as $row) {
                 $iccid = trim($row['ICCID'] ?? '');
 
-                // Si no hay ICCID, saltar
-                if (!$iccid) continue;
+                if (!$iccid) continue; // sin ICCID, se omite
 
                 // Verificar duplicados
-                $exists = Product::where('iccid', $iccid)->exists();
-                if ($exists) {
+                if (in_array($iccid, $existingIccids)) {
                     $duplicatedIccids[] = $iccid;
                     continue;
                 }
 
                 // Crear registro nuevo
-                $product = Product::create([
+                $insertBatch[] = [
                     'region' => $row['REGION'] ?? null,
                     'celular' => $row['CELULAR'] ?? null,
                     'iccid' => $iccid,
@@ -311,18 +316,44 @@ class ProductController extends Controller
 
                     'product_type_id' => $product_type,
                     'import_id' => $import->id ?? null,
-                ]);
+                ];
 
-                // Registrar movimiento en la bitácora
-                ProductMovementService::log(
-                    $product->id,
-                    'Importación inicial',
-                    'Producto importado desde archivo CSV',
-                    'N/A',
-                    'Stock'
-                );
+                // Insertar en lotes de 500
+                if (count($insertBatch) >= 500) {
+                    Product::insert($insertBatch);
+                    $insertedCount += count($insertBatch);
 
-                $insertedCount++;
+                    // Registrar bitácora de movimientos
+                    foreach ($insertBatch as $p) {
+                        ProductMovementService::log(
+                            null,
+                            'Importación inicial',
+                            'Producto importado desde archivo CSV',
+                            'N/A',
+                            'Stock',
+                            ['iccid' => $p['iccid']]
+                        );
+                    }
+
+                    $insertBatch = []; // limpiar buffer
+                }
+            }
+
+            // Insertar los registros restantes
+            if (!empty($insertBatch)) {
+                Product::insert($insertBatch);
+                $insertedCount += count($insertBatch);
+
+                foreach ($insertBatch as $p) {
+                    ProductMovementService::log(
+                        null,
+                        'Importación inicial',
+                        'Producto importado desde archivo CSV',
+                        'N/A',
+                        'Stock',
+                        ['iccid' => $p['iccid']]
+                    );
+                }
             }
 
             DB::commit();
