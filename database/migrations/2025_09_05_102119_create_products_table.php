@@ -25,26 +25,26 @@ return new class extends Migration
             $table->text('comentario')->nullable();                      // Comentario
             $table->string('fza_vta_prepago')->nullable();               // Fuerza de Venta Prepago
             $table->string('fza_vta_padre')->nullable();                 // Fuerza de Venta Padre
-            $table->string('usuario_externo')->nullable();               // Usuario (externo)
+            $table->string('usuario')->nullable();               // Usuario (externo)
             $table->string('folio')->nullable();                         // Folio
             $table->string('producto')->nullable();                      // Producto
             $table->string('num_orden')->nullable();                     // Número de orden
             $table->string('estatus_orden')->nullable();                 // Estatus de orden
             $table->string('motivo_error')->nullable();                  // Motivo de error
             $table->string('tipo_sim')->nullable();                      // Tipo SIM
-            $table->string('model', 100)->nullable();                    // Modelo del dispositivo
-            $table->string('brand', 100)->nullable();                    // Marca del dispositivo
+            $table->string('modelo', 100)->nullable();                    // Modelo del dispositivo
+            $table->string('marca', 100)->nullable();                    // Marca del dispositivo
             $table->string('color', 100)->nullable();                     // Color del dispositivo
 
             // 🔧 Control interno
             $table->enum('location_status', ['Stock', 'Asignado', 'Distribuido'])->default('stock');
             $table->enum('activation_status', ['Virgen', 'Pre activado', 'Activado', 'Caducado'])->default('Virgen');
 
-                  // 🔗 Relaciones
+            // 🔗 Relaciones
             $table->foreignId('product_type_id')->nullable()->constrained('product_types', 'id');
             $table->foreignId('import_id')->nullable()->constrained('imports', 'id');
             $table->foreignId('created_by')->nullable()->constrained('users', 'id');
-            
+
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

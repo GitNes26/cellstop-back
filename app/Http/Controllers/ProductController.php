@@ -25,7 +25,7 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = Product::with(['product_type', 'import', 'creator'])
+            $list = Product::with(['product_type', 'import'])
                 ->orderBy('id', 'desc');
 
             if ($auth->role_id > 2) {
@@ -251,130 +251,127 @@ class ProductController extends Controller
     /**
      * Importar registros desde Excel en chunks
      */
-    public function import(Request $request)
+    public function import(Request $request, Response $response)
     {
-        $response = ObjResponse::DefaultResponse();
-        $data = $request->all();
+        $response->data = ObjResponse::DefaultResponse();
 
-        if (!is_array($data) || count($data) === 0) {
+        if (!$request->has('data') || !is_array($request->data) || count($request->data) === 0) {
             $response["message"] = "No se recibieron registros válidos.";
             return response()->json($response, 400);
         }
 
-        DB::beginTransaction();
+        $data = $request->data;
+        $fileData = $request->fileData ?? null;
+        $productTypeId = $request->product_type_id ?? null;
+
+        $transaction = DB::class;
+        $transaction::beginTransaction();
+        // DB::beginTransaction();
 
         try {
-            // Crear registro en la tabla imports
+            // Crear registro en tabla imports
             $importController = new ImportController();
-            $import = $importController->createOrUpdate($request[0]['fileData'], null, DB::class);
-            $product_type = $request[0]['product_type'];
+            $import = $importController->createOrUpdate($fileData);
 
-            $insertBatch = [];
             $insertedCount = 0;
             $duplicatedIccids = [];
+            $newProducts = [];
 
-            // Obtener ICCIDs ya existentes para evitar duplicados
+            // Obtener ICCIDs existentes
             $existingIccids = Product::whereIn(
                 'iccid',
                 array_filter(array_column($data, 'ICCID'))
             )->pluck('iccid')->toArray();
 
-            foreach ($data as $row) {
-                $iccid = trim($row['ICCID'] ?? '');
+            // Procesar en lotes de 500
+            $chunks = array_chunk($data, 500);
 
-                if (!$iccid) continue; // sin ICCID, se omite
+            foreach ($chunks as $chunk) {
+                $batch = [];
 
-                // Verificar duplicados
-                if (in_array($iccid, $existingIccids)) {
-                    $duplicatedIccids[] = $iccid;
-                    continue;
+                foreach ($chunk as $row) {
+                    $iccid = trim($row['ICCID'] ?? '');
+                    if (!$iccid) continue;
+
+                    if (in_array($iccid, $existingIccids)) {
+                        $duplicatedIccids[] = $iccid;
+                        continue;
+                    }
+
+                    $batch[] = [
+                        'region' => $row['Región'] ?? null,
+                        'celular' => $row['Celular'] ?? null,
+                        'iccid' => $iccid,
+                        'imei' => $row['IMEI'] ?? null,
+                        'fecha' => isset($row['Fecha']) ? $row['Fecha'] : null,
+                        'tramite' => $row['Trámite'] ?? null,
+                        'estatus' => $row['Estatus'] ?? null,
+                        'comentario' => $row['Comentario'] ?? null,
+                        'fza_vta_prepago' => $row['Fuerza de Venta Prepago'] ?? null,
+                        'fza_vta_padre' => $row['Fuerza de Venta Padre'] ?? null,
+                        'usuario' => $row['Usuario'] ?? null,
+                        'folio' => $row['Folio'] ?? null,
+                        'producto' => $row['Producto'] ?? null,
+                        'num_orden' => $row['Núm Orden'] ?? null,
+                        'estatus_orden' => $row['Estatus orden'] ?? null,
+                        'motivo_error' => $row['Motivo error'] ?? null,
+                        'tipo_sim' => $row['Tipo SIM'] ?? null,
+                        'modelo' => $row['Modelo'] ?? null,
+                        'marca' => $row['Marca'] ?? null,
+                        'color' => $row['Color'] ?? null,
+                        'product_type_id' => $productTypeId,
+                        'import_id' => $import->id ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
+                Log::error($batch);
 
-                // Crear registro nuevo
-                $insertBatch[] = [
-                    'region' => $row['REGION'] ?? null,
-                    'celular' => $row['CELULAR'] ?? null,
-                    'iccid' => $iccid,
-                    'imei' => $row['IMEI'] ?? null,
-                    'fecha' => isset($row['FECHA']) ? $row['FECHA'] : null,
-                    'tramite' => $row['TRAMITE'] ?? null,
-                    'estatus' => $row['ESTATUS'] ?? null,
-                    'comentario' => $row['COMENTARIO'] ?? null,
-                    'fza_vta_prepago' => $row['FUERZA DE VENTA PREPAGO'] ?? null,
-                    'fza_vta_padre' => $row['FUERZA DE VENTA PADRE'] ?? null,
-                    'usuario_externo' => $row['USUARIO'] ?? null,
-                    'folio' => $row['FOLIO'] ?? null,
-                    'producto' => $row['PRODUCTO'] ?? null,
-                    'num_orden' => $row['NUM ORDEN'] ?? null,
-                    'estatus_orden' => $row['ESTATUS ORDEN'] ?? null,
-                    'motivo_error' => $row['MOTIVO ERROR'] ?? null,
-                    'tipo_sim' => $row['TIPO SIM'] ?? null,
+                if (!empty($batch)) {
+                    // Insertar y recuperar IDs reales
+                    DB::table('products')->insert($batch);
 
-                    'model' => $row['MODELO'] ?? null,
-                    'brand' => $row['MARCA'] ?? null,
-                    'color' => $row['COLOR'] ?? null,
+                    // Obtener IDs insertados (solo los nuevos ICCID)
+                    $newlyInserted = Product::whereIn('iccid', array_column($batch, 'iccid'))->get(['id', 'iccid']);
 
-                    'product_type_id' => $product_type,
-                    'import_id' => $import->id ?? null,
-                ];
-
-                // Insertar en lotes de 500
-                if (count($insertBatch) >= 500) {
-                    Product::insert($insertBatch);
-                    $insertedCount += count($insertBatch);
-
-                    // Registrar bitácora de movimientos
-                    foreach ($insertBatch as $p) {
+                    foreach ($newlyInserted as $product) {
                         ProductMovementService::log(
-                            null,
+                            $product->id,
                             'Importación inicial',
-                            'Producto importado desde archivo CSV',
+                            'Producto importado desde archivo Excel',
                             'N/A',
-                            'Stock',
-                            ['iccid' => $p['iccid']]
+                            'Stock'
                         );
                     }
 
-                    $insertBatch = []; // limpiar buffer
-                }
-            }
-
-            // Insertar los registros restantes
-            if (!empty($insertBatch)) {
-                Product::insert($insertBatch);
-                $insertedCount += count($insertBatch);
-
-                foreach ($insertBatch as $p) {
-                    ProductMovementService::log(
-                        null,
-                        'Importación inicial',
-                        'Producto importado desde archivo CSV',
-                        'N/A',
-                        'Stock',
-                        ['iccid' => $p['iccid']]
-                    );
+                    $insertedCount += count($batch);
+                    $newProducts = array_merge($newProducts, $newlyInserted->toArray());
                 }
             }
 
             DB::commit();
 
-            $response = ObjResponse::SuccessResponse();
-            $response["message"] = "{$insertedCount} registros insertados correctamente.";
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = "{$insertedCount} registros insertados correctamente.";
+            $response->data["alert_text"] = "{$insertedCount} registros insertados correctamente.";
 
-            // Agregar duplicados si existen
             if (count($duplicatedIccids) > 0) {
-                $response["duplicados"] = $duplicatedIccids;
-                $response["message"] .= " Se omitieron " . count($duplicatedIccids) . " ICCID(s) duplicado(s).";
+                $response->data["duplicados"] = $duplicatedIccids;
+                $response->data["message"] .= " Se omitieron " . count($duplicatedIccids) . " ICCID(s) duplicado(s).";
+                $response->data["alert_text"] .= " Se omitieron " . count($duplicatedIccids) . " ICCID(s) duplicado(s).";
             }
+
+            // $response->data["productos_insertados"] = $newProducts;
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
-            DB::rollBack();
+            $transaction::rollBack();
             Log::error("ProductController ~ import ~ " . $e->getMessage());
             $response = ObjResponse::CatchResponse("Error al procesar los registros -> " . $e->getMessage());
             return response()->json($response, 500);
         }
     }
+
 
 
 

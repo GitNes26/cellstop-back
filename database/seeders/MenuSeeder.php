@@ -113,7 +113,7 @@ class MenuSeeder extends Seeder
                     [
                         'menu' => 'Tipos de producto',
                         'url' => '/app/catalogos/tipos-de-producto',
-                        'icon' => 'SimCardRounded',
+                        'icon' => 'DevicesOtherRounded',
                     ],
                     [
                         'menu' => 'Productos',

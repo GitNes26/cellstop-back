@@ -67,7 +67,7 @@ class ImportController extends Controller
      * Crear o actualizar una importación.
      */
     // public function createOrUpdate(Request $request, Response $response, Int $id = null)
-    public function createOrUpdate($importData, ?Int $id = null, DB $transaction)
+    public function createOrUpdate($importData, ?Int $id = null /* DB $transaction */)
     {
         // $response->data = ObjResponse::DefaultResponse();
         try {
@@ -107,8 +107,7 @@ class ImportController extends Controller
             // $response->data["message"] = $id ? 'Petición satisfactoria | Archivo actualizado.' : 'Petición satisfactoria | Archivo importado.';
             // $response->data["alert_text"] = $id ? "Archivo actualizado" : "Archivo registrado";
         } catch (\Exception $ex) {
-            DB::rollBack();
-            $transaction::rollBack();
+            // $transaction::rollBack();
             $msg = "ImportController ~ createOrUpdate ~ Error: " . $ex->getMessage();
             Log::error($msg);
             // $response->data = ObjResponse::CatchResponse($msg);

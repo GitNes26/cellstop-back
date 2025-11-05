@@ -32,22 +32,23 @@ class Product extends Model
         'comentario',
         'fza_vta_prepago',
         'fza_vta_padre',
-        'usuario_externo',
+        'usuario',
         'folio',
         'producto',
         'num_orden',
         'estatus_orden',
         'motivo_error',
         'tipo_sim',
-        'model',
-        'brand',
+
+        'modelo',
+        'marca',
         'color',
         'location_status',
         'activation_status',
 
         'product_type_id',
         'import_id',
-        'created_by',
+        // 'created_by',
         'active',
     ];
     // protected $fillable = [
@@ -98,9 +99,9 @@ class Product extends Model
     /**
      * Tipo de producto al que pertenece este producto
      */
-    public function productType()
+    public function product_type()
     {
-        return $this->belongsTo(ProductType::class);
+        return $this->belongsTo(ProductType::class, 'product_type_id');
     }
 
     /**
@@ -111,13 +112,13 @@ class Product extends Model
         return $this->belongsTo(Import::class, 'import_id');
     }
 
-    /**
-     * Usuario que registró este producto
-     */
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+    // /**
+    //  * Usuario que registró este producto
+    //  */
+    // public function creator()
+    // {
+    //     return $this->belongsTo(User::class, 'created_by');
+    // }
 
     /**
      * Movimientos del producto (por ejemplo distribución o venta)
