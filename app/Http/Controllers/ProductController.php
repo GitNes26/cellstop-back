@@ -373,6 +373,103 @@ class ProductController extends Controller
     }
 
 
+    /**
+     * Pre Activar múltiples registros.
+     */
+    public function preActivation(Request $request, Response $response)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $iccidList = array_unique($request->data);
+            $requestedCount = count($iccidList);
+
+            // Validaciones
+            if ($requestedCount === 0) {
+                return $this->sendWarningResponse($response, 'No hay ICCIDs para procesar');
+            }
+
+            if ($requestedCount > 5000) {
+                return $this->sendWarningResponse($response, 'Límite excedido: Máximo 5000 registros por lote');
+            }
+
+            DB::beginTransaction();
+
+            $chunkSize = 500; // Procesar en chunks de 200 para mejor rendimiento
+            $totalUpdated = 0;
+            $notFoundIccids = [];
+            $alreadyActivated = 0;
+
+            // Procesar por chunks para mejor manejo de memoria
+            collect($iccidList)->chunk($chunkSize)->each(function ($chunk) use (&$totalUpdated, &$notFoundIccids, &$alreadyActivated) {
+                $iccidChunk = $chunk->toArray();
+
+                // Obtener productos del chunk actual
+                $products = Product::whereIn('iccid', $iccidChunk)
+                    ->get(['id', 'iccid', 'activation_status'])
+                    ->keyBy('iccid');
+
+                // Identificar ICCIDs no encontrados en este chunk
+                $foundIccids = $products->pluck('iccid')->toArray();
+                $notFoundIccids = array_merge($notFoundIccids, array_diff($iccidChunk, $foundIccids));
+
+                if ($products->isNotEmpty()) {
+                    $productIds = $products->pluck('id')->toArray();
+
+                    // Actualizar productos que no estén ya pre-activados
+                    $chunkUpdated = Product::whereIn('id', $productIds)
+                        ->where('activation_status', '!=', 'Pre-activado')
+                        ->update([
+                            'fecha' => now(),
+                            'activation_status' => "Pre-activado",
+                            'updated_at' => now()
+                        ]);
+
+                    $totalUpdated += $chunkUpdated;
+                    $alreadyActivated += ($products->count() - $chunkUpdated);
+
+                    // Crear logs para los productos actualizados en este chunk
+                    $updatedProducts = $products->take($chunkUpdated);
+                    foreach ($updatedProducts as $product) {
+                        ProductMovementService::log(
+                            $product->id,
+                            'Pre-activación',
+                            "Producto Pre-activado - ICCID: {$product->iccid}",
+                            'Stock',
+                            'Stock',
+                            auth()->id()
+                        );
+                    }
+                }
+            });
+
+            DB::commit();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = $alreadyActivated == 1
+                ? 'Petición satisfactoria | Registro pre-activado.'
+                : "Petición satisfactoria | Registros pre-activados ($alreadyActivated).";
+
+            $response->data["alert_text"] = $alreadyActivated == 1
+                ? 'Registro pre-activado'
+                : "Registros pre-activados ($alreadyActivated)";
+
+            $response->data["metrics"] = [
+                'requested' => $requestedCount,
+                'updated' => $totalUpdated,
+                'not_found' => count($notFoundIccids),
+                'already_activated' => $alreadyActivated
+            ];
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            $msg = "ProductController ~ preActivation ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+
+
 
 
     /**

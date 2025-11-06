@@ -160,6 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [ProductController::class, 'deleteMultiple']);
 
         Route::post("/import", [ProductController::class, 'import']);
+        Route::post("/preActivation", [ProductController::class, 'preActivation']);
         Route::get('/{id}/movements', [ProductController::class, 'movements']);
         // Route::post("/import", [ImportController::class, 'store']);
     });
