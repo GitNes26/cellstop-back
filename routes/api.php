@@ -150,7 +150,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::apiResource('products', ProductController::class);
     Route::prefix("products")->group(function () {
         Route::get("/", [ProductController::class, 'index']);
-        Route::get("/selectIndexByRole/{role_id}", [ProductController::class, 'selectIndexByRole']);
         Route::get("/selectIndex", [ProductController::class, 'selectIndex']);
         Route::post("/store", [ProductController::class, 'store']);
         Route::post("/update/{id?}", [ProductController::class, 'update']);

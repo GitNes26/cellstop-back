@@ -54,12 +54,27 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $list = Product::where('active', true)
-                ->select('id as id', DB::raw("CONCAT(celular, ' - ',iccid,' - ',fecha) as label"), 'location_status')
+                ->select(
+                    'id',
+                    DB::raw("
+                        CONCAT_WS(
+                            ' - ',
+                            NULLIF(celular, ''),
+                            NULLIF(iccid, ''),
+                            IFNULL(
+                                DATE_FORMAT(fecha, '%Y/%m/%d'),
+                                ''
+                            )
+                        ) as label
+                    "),
+                    'location_status'
+                )
                 ->orderBy('celular', 'asc')
                 ->get();
 
+
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
+            $response->data["message"] = 'Petición satisfactoria | Lista de productos para selector.';
             $response->data["alert_text"] = "Productos encontrados";
             $response->data["result"] = $list;
             $response->data["toast"] = false;
@@ -256,7 +271,8 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         if (!$request->has('data') || !is_array($request->data) || count($request->data) === 0) {
-            $response["message"] = "No se recibieron registros válidos.";
+            $response->data["alert_text"] = "No se recibieron registros válidos.";
+            $response->data["message"] = "No se recibieron registros válidos.";
             return response()->json($response, 400);
         }
 
