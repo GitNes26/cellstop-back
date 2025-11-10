@@ -67,7 +67,8 @@ class ProductController extends Controller
                             )
                         ) as label
                     "),
-                    'location_status'
+                    'location_status',
+                    'activation_status'
                 )
                 ->orderBy('celular', 'asc')
                 ->get();
