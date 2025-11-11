@@ -14,10 +14,27 @@ return new class extends Migration
         Schema::create('lotes', function (Blueprint $table) {
             $table->id();
             $table->string("lote");
-            $table->foreignId('seller_id')->constrained('users', 'id')->onDelete('cascade')->comment("usuario al que se le asigno el lote"); // vendedor
-            $table->text('description')->nullable();
-            $table->foreignId('created_by')->constrained('users', 'id')->onDelete('cascade')->comment("usuario que crea el lote"); // admin o supervisor
 
+            // Información del lote
+            $table->unsignedBigInteger('folio_number')->nullable()->comment('Folio o número identificador del lote');
+            $table->string('lada', 10)->nullable()->comment('Código de área o LADA asociado al lote');
+            $table->date('preactivation_date')->nullable()->comment('Fecha de preactivación del lote');
+            $table->integer('quantity')->nullable()->comment('Cantidad de productos o chips en el lote');
+
+            // Relaciones
+            $table->foreignId('seller_id')
+                ->constrained('users', 'id')
+                ->onDelete('cascade')
+                ->comment("Usuario al que se le asignó el lote"); // vendedor
+
+            $table->text('description')->nullable();
+
+            $table->foreignId('created_by')
+                ->constrained('users', 'id')
+                ->onDelete('cascade')
+                ->comment("Usuario que crea el lote"); // admin o supervisor
+
+            // Estado
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

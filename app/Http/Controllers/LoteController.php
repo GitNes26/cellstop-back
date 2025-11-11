@@ -140,7 +140,7 @@ class LoteController extends Controller
                 $lote->active = true;
             }
 
-            $lote->fill($request->only(['lote', 'seller_id', 'description']));
+            $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio_number', 'lada', 'preactivation_date', 'quantity']));
             $lote->save();
 
             $response->data = ObjResponse::SuccessResponse();

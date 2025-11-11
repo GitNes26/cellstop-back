@@ -36,7 +36,7 @@ class PointOfSale extends Model
      */
     protected $primaryKey = 'id';
 
-    public function sales()
+    public function visits()
     {
         return $this->hasMany(Sale::class, 'pos_id');
     }
@@ -50,8 +50,8 @@ class PointOfSale extends Model
     // ];
 
     /**
-     * Accesores adicionales para el modelo.
-     * @var array
-     */
+ * Accesores adicionales para el modelo.
+ * @var array
+ */
     // protected $appends = ['full_name', 'full_name_reverse'];
 }

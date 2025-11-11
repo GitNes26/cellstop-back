@@ -17,8 +17,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDistribucionController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VisitController;
 use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -192,14 +192,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [PointOfSaleController::class, 'deleteMultiple']);
     });
 
-    Route::prefix("sales")->group(function () {
-        Route::get("/", [SaleController::class, 'index']);
-        Route::get("/selectIndex", [SaleController::class, 'selectIndex']);
-        Route::post("/createOrUpdate/{id?}", [SaleController::class, 'createOrUpdate']);
-        Route::get("/id/{id}", [SaleController::class, 'show']);
-        Route::get("/delete/{id}", [SaleController::class, 'delete']);
-        Route::get("/disEnable/{id}/{active}", [SaleController::class, 'disEnable']);
-        Route::get("/deleteMultiple", [SaleController::class, 'deleteMultiple']);
+    Route::prefix("visits")->group(function () {
+        Route::get("/", [VisitController::class, 'index']);
+        Route::get("/selectIndex", [VisitController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [VisitController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [VisitController::class, 'show']);
+        Route::get("/delete/{id}", [VisitController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [VisitController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [VisitController::class, 'deleteMultiple']);
     });
 
 

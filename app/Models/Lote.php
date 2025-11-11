@@ -22,14 +22,19 @@ class Lote extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        "lote",
+        'lote',
+        'folio_number',
+        'lada',
+        'preactivation_date',
+        'quantity',
         'seller_id',
         'description',
         'created_by',
-        'active'
+        'active',
     ];
 
     protected $casts = [
+        'preactivation_date' => 'date',
         'active' => 'boolean',
     ];
 
@@ -47,6 +52,10 @@ class Lote extends Model
     protected $primaryKey = 'id';
 
 
+    // ────────────────────────────────
+    // 🔗 Relaciones
+    // ────────────────────────────────
+
 
     public function seller()
     {
@@ -60,7 +69,10 @@ class Lote extends Model
     {
         return $this->hasMany(LoteDetail::class, 'lote_id');
     }
-
+    public function visits()
+    {
+        return $this->hasMany(Visit::class, 'lote_id');
+    }
 
     /**
      * Valores defualt para los campos especificados.
@@ -71,9 +83,9 @@ class Lote extends Model
     // ];
 
     /**
-     * Accesores adicionales para el modelo.
-     * @var array
-     */
+ * Accesores adicionales para el modelo.
+ * @var array
+ */
     // protected $appends = ['full_name', 'full_name_reverse'];
 
 }

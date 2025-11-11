@@ -52,8 +52,13 @@ class MenuSeeder extends Seeder
                 'items' => [
                     [
                         'menu' => 'Tablero',
-                        'url' => '/app',
+                        'url' => '/app/tablero',
                         'icon' => 'DashboardRounded',
+                    ],
+                    [
+                        'menu' => 'Reporteador',
+                        'url' => '/app/reporteador',
+                        'icon' => 'ViewQuiltRounded',
                     ],
                     [
                         'menu' => 'Noticias',
@@ -137,6 +142,18 @@ class MenuSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'menu' => 'Otros',
+                'icon' => '',
+                'caption' => '',
+                'items' => [
+                    [
+                        'menu' => 'Editor de Plantilla',
+                        'url' => '/app/otros/editor-de-plantilla',
+                        'icon' => 'DesignServicesRounded',
+                    ],
+                ]
+            ]
         ];
 
         $groupOrder = 1;

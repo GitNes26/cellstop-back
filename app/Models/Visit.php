@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Sale extends Model
+class Visit extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -22,25 +22,32 @@ class Sale extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'product_id',
         'seller_id',
         'pos_id',
-        'buyer_name',
-        'buyer_phone',
+        'product_ids',
+        'contact_name',
+        'contact_phone',
+        'visit_type',
         'lat',
         'lon',
         'ubication',
         'evidence_photo',
-        'status',
+        'chips_delivered',
+        'chips_sold',
+        'chips_remaining',
+        'observations',
         'active'
     ];
 
-
+    protected $casts = [
+        'product_ids' => 'array',
+        'active' => 'boolean',
+    ];
     /**
      * Nombre de la tabla asociada al modelo.
      * @var string
      */
-    protected $table = 'sales';
+    protected $table = 'visits';
 
     /**
      * LlavePrimaria asociada a la tabla.
@@ -49,9 +56,9 @@ class Sale extends Model
     protected $primaryKey = 'id';
 
 
-    public function product()
+    public function products()
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasMany(Product::class, 'id', 'product_ids');
     }
 
     public function seller()
@@ -59,7 +66,7 @@ class Sale extends Model
         return $this->belongsTo(VW_User::class, 'seller_id');
     }
 
-    public function pointOfSale()
+    public function point_of_sale()
     {
         return $this->belongsTo(PointOfSale::class, 'pos_id');
     }
@@ -74,8 +81,8 @@ class Sale extends Model
     // ];
 
     /**
-     * Accesores adicionales para el modelo.
-     * @var array
-     */
+ * Accesores adicionales para el modelo.
+ * @var array
+ */
     // protected $appends = ['full_name', 'full_name_reverse'];
 }

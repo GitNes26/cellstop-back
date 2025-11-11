@@ -235,7 +235,7 @@ class ImportController extends Controller
         // Si es tipo "int"
         if ($request->file_type === 'int') {
             // crear importadores específicos
-            // Excel::import(new SalesImport($import->id), $file);
+            // Excel::import(new VisitsImport($import->id), $file);
         }
 
         return response()->json(['message' => 'Archivo importado correctamente']);

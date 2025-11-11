@@ -72,7 +72,7 @@ class User extends Authenticatable
         return $this->hasMany(LoteDetail::class);
     }
 
-    public function sales()
+    public function visits()
     {
         return $this->hasMany(Sale::class);
     }

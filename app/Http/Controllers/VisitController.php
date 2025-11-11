@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale;
+use App\Models\Visit;
 use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -10,19 +10,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class SaleController extends Controller
+class VisitController extends Controller
 {
     /**
-     * Mostrar lista de ventas.
-     *
-     * @return \Illuminate\Http\Response $response
+     * Mostrar lista de visitas.
      */
     public function index(Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = Sale::with(['product', 'seller', 'pointOfSale'])
+
+            $list = Visit::with(['products', 'seller', 'point_of_sale'])
                 ->orderBy('id', 'desc');
 
             if ($auth->role_id > 2) {
@@ -32,10 +31,10 @@ class SaleController extends Controller
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de ventas.';
+            $response->data["message"] = 'Petición satisfactoria | Lista de visitas.';
             $response->data["result"] = $list;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ index ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ index ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -44,26 +43,27 @@ class SaleController extends Controller
     }
 
     /**
-     * Mostrar listado para un selector.
-     *
-     * @return \Illuminate\Http\Response $response
+     * Listado para select.
      */
     public function selectIndex(Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $list = Sale::where('active', true)
-                ->select('id', DB::raw("CONCAT(product_id,' - ',buyer_name) as label"))
+            $list = Visit::where('active', true)
+                ->select(
+                    'id',
+                    DB::raw("CONCAT('Visita ', id, ' - ', visit_type, ' - ', IFNULL(contact_name, 'Sin contacto')) as label")
+                )
                 ->orderBy('id', 'desc')
                 ->get();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de ventas.';
-            $response->data["alert_text"] = "Ventas encontradas";
+            $response->data["message"] = 'Petición satisfactoria | Lista de visitas.';
+            $response->data["alert_text"] = "Visitas encontradas";
             $response->data["result"] = $list;
             $response->data["toast"] = false;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -72,26 +72,28 @@ class SaleController extends Controller
     }
 
     /**
-     * Crear o Actualizar venta.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param Int $id
-     * @return \Illuminate\Http\Response $response
+     * Crear o actualizar visita.
      */
     public function createOrUpdate(Request $request, Response $response, Int $id = null)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $validator = $this->validateAvailableData($request, 'sales', [
+            // Validaciones básicas
+            $validator = $this->validateAvailableData($request, 'visits', [
                 [
-                    'field' => 'buyer_phone',
-                    'label' => 'Teléfono del comprador',
-                    'rules' => ['string', 'max:10', 'min:10'],
+                    'field' => 'contact_phone',
+                    'label' => 'Teléfono de contacto',
+                    'rules' => ['nullable', 'string', 'max:10', 'min:10'],
                     'messages' => [
                         'string' => 'El número celular debe ser texto.',
                         'max' => 'El número celular no puede tener más de 10 caracteres.',
                         'min' => 'El número celular debe tener al menos 10 caracteres.',
                     ]
+                ],
+                [
+                    'field' => 'visit_type',
+                    'label' => 'Tipo de visita',
+                    'rules' => ['required', 'in:Distribución,Monitoreo']
                 ]
             ], $id);
 
@@ -102,31 +104,38 @@ class SaleController extends Controller
                 return response()->json($response);
             }
 
-            $sale = Sale::find($id);
-            if (!$sale) $sale = new Sale();
+            $visit = Visit::find($id);
+            if (!$visit) $visit = new Visit();
 
-            $sale->fill($request->except(['evidence_photo_file']));
-            $sale->save();
+            // Si se recibe un array de productos, guardarlo como JSON
+            if ($request->has('product_ids') && is_array($request->product_ids)) {
+                $request->merge([
+                    'product_ids' => json_encode($request->product_ids)
+                ]);
+            }
 
-            // Subida de evidencia, si se manda archivo
+            $visit->fill($request->except(['evidence_photo_file']));
+            $visit->save();
+
+            // Subida de evidencia (si aplica)
             if ($request->hasFile('evidence_photo_file')) {
                 $this->ImageUp(
                     $request,
                     'evidence_photo_file',
-                    "sales",
-                    $sale->id,
+                    "visits",
+                    $visit->id,
                     'EVIDENCIA',
                     $id == null ? true : false,
                     "noImage.png",
-                    $sale
+                    $visit
                 );
             }
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = $id > 0 ? 'Petición satisfactoria | venta editada.' : 'Petición satisfactoria | venta registrada.';
-            $response->data["alert_text"] = $id > 0 ? "Venta editada" : "Venta registrada";
+            $response->data["message"] = $id > 0 ? 'Petición satisfactoria | visita editada.' : 'Petición satisfactoria | visita registrada.';
+            $response->data["alert_text"] = $id > 0 ? "Visita editada" : "Visita registrada";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -135,24 +144,20 @@ class SaleController extends Controller
     }
 
     /**
-     * Mostrar venta.
-     *
-     * @param   int $id
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response $response
+     * Mostrar detalle de una visita.
      */
     public function show(Request $request, Response $response, Int $id, bool $internal = false)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $sale = Sale::find($id);
-            if ($internal) return $sale;
+            $visit = Visit::with(['products', 'seller', 'point_of_sale'])->find($id);
+            if ($internal) return $visit;
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | venta encontrada.';
-            $response->data["result"] = $sale;
+            $response->data["message"] = 'Petición satisfactoria | visita encontrada.';
+            $response->data["result"] = $visit;
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ show ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ show ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -161,26 +166,23 @@ class SaleController extends Controller
     }
 
     /**
-     * "Eliminar" (cambiar estado activo=0) venta.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response $response
+     * Eliminar visita (soft delete).
      */
     public function delete(Response $response, Int $id)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            Sale::where('id', $id)
+            Visit::where('id', $id)
                 ->update([
                     'active' => false,
-                    'deleted_at' => date('Y-m-d H:i:s')
+                    'deleted_at' => now()
                 ]);
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | venta eliminada.";
-            $response->data["alert_text"] = "Venta eliminada";
+            $response->data["message"] = "Petición satisfactoria | visita eliminada.";
+            $response->data["alert_text"] = "Visita eliminada";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ delete ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ delete ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -189,27 +191,23 @@ class SaleController extends Controller
     }
 
     /**
-     * "Activar o Desactivar" (cambiar estado activo=1/0).
-     *
-     * @param  int $id
-     * @param  string $active
-     * @return \Illuminate\Http\Response $response
+     * Activar o desactivar visita.
      */
     public function disEnable(Response $response, Int $id, string $active)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            Sale::where('id', $id)
+            Visit::where('id', $id)
                 ->update([
                     'active' => $active === "reactivar" ? 1 : 0
                 ]);
 
             $description = $active == "reactivar" ? 'reactivada' : 'desactivada';
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | venta $description.";
-            $response->data["alert_text"] = "Venta $description";
+            $response->data["message"] = "Petición satisfactoria | visita $description.";
+            $response->data["alert_text"] = "Visita $description";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -218,26 +216,23 @@ class SaleController extends Controller
     }
 
     /**
-     * Eliminar uno o varios registros.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response $response
+     * Eliminar múltiples registros.
      */
     public function deleteMultiple(Request $request, Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
             $countDeleted = sizeof($request->ids);
-            Sale::whereIn('id', $request->ids)->update([
+            Visit::whereIn('id', $request->ids)->update([
                 'active' => false,
-                'deleted_at' => date('Y-m-d H:i:s'),
+                'deleted_at' => now(),
             ]);
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = $countDeleted == 1 ? 'Petición satisfactoria | registro eliminado.' : "Petición satisfactoria | registros eliminados ($countDeleted).";
             $response->data["alert_text"] = $countDeleted == 1 ? 'Registro eliminado' : "Registros eliminados ($countDeleted)";
         } catch (\Exception $ex) {
-            $msg = "SaleController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "VisitController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
