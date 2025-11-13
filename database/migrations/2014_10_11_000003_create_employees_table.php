@@ -17,11 +17,13 @@ return new class extends Migration
             $table->string('avatar', 255)->nullable();
             $table->string('name');
             $table->string('plast_name');
-            $table->string('mlast_name');
+            $table->string('mlast_name')->nullable();
             $table->string('cellphone')->nullable();
             $table->string('office_phone')->nullable();
             $table->string('ext')->nullable()->comment('extension telefonica de su lugar en caso de tener');
             $table->string('img_firm', 255)->nullable();
+            $table->string('ine_front', 255)->nullable();
+            $table->string('ine_back', 255)->nullable();
             $table->foreignId('position_id')->constrained('positions')->comment('Puesto de trabajo');
             $table->foreignId('department_id')->nullable()->constrained('departments');
             // $table->foreignId('workstation_id')->constrained('workstations');

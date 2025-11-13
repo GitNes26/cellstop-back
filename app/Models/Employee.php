@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // Audtiable(logs)
     use SoftDeletes;
 
     /**
@@ -32,6 +33,8 @@ class Employee extends Model
         'office_phone',
         'ext',
         'img_firm',
+        'ine_front',
+        'ine_back',
         'position_id',
         'department_id',
         // 'user_id',
@@ -75,12 +78,24 @@ class Employee extends Model
 
     public function getFullNameAttribute()
     {
-        return trim("{$this->name} {$this->plast_name} {$this->mlast_name}");
+        $names = array_filter([
+            $this->name,
+            $this->plast_name,
+            $this->mlast_name
+        ]);
+
+        return trim(implode(' ', $names));
     }
 
     public function getFullNameReverseAttribute()
     {
-        return trim("{$this->plast_name} {$this->mlast_name} {$this->name}");
+        $names = array_filter([
+            $this->plast_name,
+            $this->mlast_name,
+            $this->name
+        ]);
+
+        return trim(implode(' ', $names));
     }
 
     /**

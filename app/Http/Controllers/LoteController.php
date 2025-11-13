@@ -66,15 +66,11 @@ class LoteController extends Controller
                     'id' => $lote->id,
                     'label' => "#{$lote->lote} - {$lote->seller->full_name}",
                     'seller_id' => $lote->seller->id,
+                    'folio' => $lote->folio,
+                    'lada' => $lote->lada,
+                    'quantity' => $lote->quantity,
+                    'preactivation_date' => $lote->preactivation_date,
                 ]);
-            // ->with('seller:id,username,full_name')
-            // ->select('id', DB::raw("CONCAT('#',lote,' - ', seller_id) as label"))
-            // ->orderBy('lote', 'asc')
-            // ->get()
-            // ->map(fn($lote) => [
-            //     'id' => $lote->id,
-            //     'label' => "#{$lote->lote} - {$lote->seller->username}"
-            // ]);
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = "Petición satisfactoria | Lista de lotes.";
@@ -140,7 +136,7 @@ class LoteController extends Controller
                 $lote->active = true;
             }
 
-            $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio_number', 'lada', 'preactivation_date', 'quantity']));
+            $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio', 'lada', 'preactivation_date', 'quantity']));
             $lote->save();
 
             $response->data = ObjResponse::SuccessResponse();

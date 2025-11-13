@@ -50,7 +50,7 @@ class ProductImport implements ToModel, WithHeadingRow
          'active'          => true,
 
          'location_status' => 'stock',
-         'activation_status' => 'virgen',
+         'activation_status' => 'Pre-activado',
          'active' => true
       ]);
    }

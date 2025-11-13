@@ -67,8 +67,8 @@ class LoteDetailController extends Controller
                 ->get()
                 ->map(fn($lote) => [
                     'id' => $lote->id,
-                    'label' => "#{$lote->lote} - {$lote->seller->full_name}",
-                    'seller_id' => $lote->seller->id
+                    'label' => "{$lote->lote} - {$lote->seller->full_name}",
+                    'seller_id' => $lote->seller->id,
                 ]);
             // ->with('seller:id,username,full_name')
             // ->select('id', DB::raw("CONCAT('#',lote,' - ', seller_id) as label"))

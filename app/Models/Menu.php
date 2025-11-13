@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Menu extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // Audtiable(logs)
     use SoftDeletes;
 
     /**
@@ -67,9 +68,9 @@ class Menu extends Model
     // }
 
     /**
-     * Valores defualt para los campos especificados.
-     * @var array
-     */
+ * Valores defualt para los campos especificados.
+ * @var array
+ */
     // protected $attributes = [
     //     'active' => true,
     // ];

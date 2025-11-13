@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Situation extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // Audtiable(logs)
 
     /**
      * Especificar la conexion si no es la por default

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("lote");
 
             // Información del lote
-            $table->unsignedBigInteger('folio_number')->nullable()->comment('Folio o número identificador del lote');
+            $table->unsignedBigInteger('folio')->nullable()->comment('Folio o número identificador del lote');
             $table->string('lada', 10)->nullable()->comment('Código de área o LADA asociado al lote');
             $table->date('preactivation_date')->nullable()->comment('Fecha de preactivación del lote');
             $table->integer('quantity')->nullable()->comment('Cantidad de productos o chips en el lote');

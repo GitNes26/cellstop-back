@@ -31,6 +31,8 @@ class Controller extends BaseController
     {
         // $date = date('Y-m-d H:i:s');
         try {
+            // Log::info("Controller ~ ImageUp ~ requestFileName: " . $requestFileName);
+
             $dir = public_path($dirPath);
             $img_name = "";
             if ($request->hasFile($requestFileName)) {

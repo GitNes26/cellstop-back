@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // Audtiable(logs)
     use SoftDeletes;
 
     /**
@@ -177,8 +178,8 @@ class Product extends Model
     // ];
 
     /**
-     * Accesores adicionales para el modelo.
-     * @var array
-     */
+ * Accesores adicionales para el modelo.
+ * @var array
+ */
     // protected $appends = ['full_name', 'full_name_reverse'];
 }

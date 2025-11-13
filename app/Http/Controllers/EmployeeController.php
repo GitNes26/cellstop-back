@@ -51,8 +51,9 @@ class EmployeeController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $list = Employee::where('active', true)
-                ->select('id as id', DB::raw("CONCAT(payroll_number,' - ',name,' ',plast_name,' ',mlast_name) as label"))
-                ->orderBy(DB::raw("CONCAT(name,' ',plast_name,' ',mlast_name)"), 'asc')->get();
+                ->select('id as id', DB::raw("CONCAT(payroll_number, ' - ', TRIM(CONCAT(name, ' ', COALESCE(plast_name, ''), ' ', COALESCE(mlast_name, '')))) as label"))
+                ->orderBy(DB::raw("CONCAT(payroll_number, ' - ', TRIM(CONCAT(name, ' ', COALESCE(plast_name, ''), ' ', COALESCE(mlast_name, ''))))"), 'asc')
+                ->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'peticion satisfactoria | lista de empleados.';
@@ -109,11 +110,13 @@ class EmployeeController extends Controller
             $employee = Employee::find($id);
             if (!$employee) $employee = new Employee();
 
-            $employee->fill($request->except(['avatar', 'img_firm']));
+            $employee->fill($request->except(['avatar', 'img_firm', 'ine_front', 'ine_back']));
             $employee->save();
 
             $this->ImageUp($request, 'avatar', "employees", $employee->id, 'AVATAR', $id == null ? true : false, "noImage.png", $employee);
             $this->ImageUp($request, 'img_firm', "employees", $employee->id, 'FIRMA', $id == null ? true : false, "noImage.png", $employee);
+            $this->ImageUp($request, 'ine_front', "employees", $employee->id, 'INE_FRONTAL', $id == null ? true : false, "noImage.png", $employee);
+            $this->ImageUp($request, 'ine_back', "employees", $employee->id, 'INE_REVERSO', $id == null ? true : false, "noImage.png", $employee);
 
 
             $response->data = ObjResponse::SuccessResponse();
