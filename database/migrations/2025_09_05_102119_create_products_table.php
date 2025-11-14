@@ -38,7 +38,7 @@ return new class extends Migration
 
             // 🔧 Control interno
             $table->enum('location_status', ['Stock', 'Asignado', 'Distribuido'])->default('stock');
-            $table->enum('activation_status', ['Virgen', 'Pre-activado', 'Activado', 'Caducado'])->default('Pre-activado');
+            $table->enum('activation_status', ['Virgen', 'Pre-activado', 'Activado', 'Portado', 'Caducado'])->default('Pre-activado');
 
             // 🔗 Relaciones
             $table->foreignId('product_type_id')->nullable()->constrained('product_types', 'id');

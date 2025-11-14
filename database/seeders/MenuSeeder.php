@@ -121,11 +121,6 @@ class MenuSeeder extends Seeder
                         'icon' => 'DevicesOtherRounded',
                     ],
                     [
-                        'menu' => 'Productos',
-                        'url' => '/app/catalogos/productos',
-                        'icon' => 'SimCardRounded',
-                    ],
-                    [
                         'menu' => 'Lotes',
                         'url' => '/app/catalogos/lotes',
                         'icon' => 'Inventory2Rounded',
@@ -135,18 +130,55 @@ class MenuSeeder extends Seeder
                         'url' => '/app/catalogos/puntos-de-venta',
                         'icon' => 'Storefront',
                     ],
-                    [
-                        'menu' => 'Venta',
-                        'url' => '/app/catalogos/ventas',
-                        'icon' => 'PointOfSale',
-                    ],
                 ],
+            ],
+            [
+                'menu' => 'Flujo de Productos',
+                'icon' => 'SimCardRounded',
+                'caption' => 'Proceso de distribución',
+                'items' => [
+                    [
+                        'menu' => 'Productos',
+                        'url' => '/app/productos',
+                        'icon' => 'SimCardRounded',
+                    ],
+                    [
+                        'menu' => 'Productos en Stock',
+                        'url' => '/app/productos/en-stock',
+                        'icon' => 'Inventory2Rounded',
+                    ],
+                    [
+                        'menu' => 'Productos Asignados',
+                        'url' => '/app/productos/asignados',
+                        'icon' => 'AssignmentIndRounded',
+                    ],
+                    [
+                        'menu' => 'Productos Distribuidos',
+                        'url' => '/app/productos/distribuidos',
+                        'icon' => 'OutboxRounded',
+                    ],
+                    [
+                        'menu' => 'Productos Activados',
+                        'url' => '/app/productos/activados',
+                        'icon' => 'VerifiedRounded',
+                    ],
+                    [
+                        'menu' => 'Productos Portados',
+                        'url' => '/app/productos/portados',
+                        'icon' => 'SimCardAlertRounded',
+                    ],
+                ]
             ],
             [
                 'menu' => 'Otros',
                 'icon' => '',
                 'caption' => '',
                 'items' => [
+                    [
+                        'menu' => 'Visitas',
+                        'url' => '/app/otros/visitas',
+                        'icon' => 'PointOfSale',
+                    ],
                     [
                         'menu' => 'Editor de Plantilla',
                         'url' => '/app/otros/editor-de-plantilla',

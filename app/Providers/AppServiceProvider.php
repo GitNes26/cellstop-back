@@ -73,8 +73,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Log solo en desarrollo
-        if (app()->isLocal()) {
-            \Log::info('Observers registrados para: ' . count($this->observableModels) . ' modelos');
-        }
+        // if (app()->isLocal()) {
+        //     \Log::info('Observers registrados para: ' . count($this->observableModels) . ' modelos');
+        // }
     }
 }
