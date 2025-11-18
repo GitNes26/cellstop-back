@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -113,6 +114,33 @@ class Product extends Model
         return $this->belongsTo(Import::class, 'import_id');
     }
 
+    public function uploader()
+    {
+        return $this->hasOneThrough(
+            VW_User::class,     // Modelo destino
+            Import::class,      // Modelo intermedio
+            'id',               // FK en Import (imports.id)
+            'id',               // FK en User (users.id)  
+            'import_id',        // FK en Product (products.import_id)
+            'uploaded_by'       // FK en Import (imports.uploaded_by)
+        );
+    }
+    /**
+     * Accessor para el nombre del usuario que subió
+     */
+    public function getImportUploaderNameAttribute()
+    {
+        return $this->import?->uploader?->username ?? 'N/A';
+    }
+
+    /**
+     * Scope para cargar el importador
+     */
+    public function scopeWithImportUploader($query)
+    {
+        return $query->with(['import.uploader']);
+    }
+
     // /**
     //  * Usuario que registró este producto
     //  */
@@ -168,6 +196,198 @@ class Product extends Model
     //     'fecha_publicacion' => 'date',
     //     'active' => 'boolean'
     // ];
+
+
+    
+    /* -------------------------------------------------------------
+     | 🔍 SCOPES
+     |--------------------------------------------------------------*/
+    /**
+     * Scope para buscar por folio o rango de folios
+     */
+    public function scopeByFolio(Builder $query, $folio)
+    {
+        return $query->where('folio', $folio);
+    }
+
+    public function scopeByFolioRange(Builder $query, $startFolio, $endFolio = null)
+    {
+        if ($endFolio) {
+            return $query->whereBetween('folio', [$startFolio, $endFolio]);
+        }
+
+        return $query->where('folio', '>=', $startFolio);
+    }
+
+    public function scopeSearchByFolio(Builder $query, $searchTerm)
+    {
+        return $query->where('folio', 'LIKE', "%{$searchTerm}%");
+    }
+
+    /**
+     * Scope para filtrar por fechas de creación
+     */
+    public function scopeCreatedBetween(Builder $query, $startDate, $endDate = null)
+    {
+        if ($endDate) {
+            return $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        return $query->whereDate('created_at', $startDate);
+    }
+
+    public function scopeCreatedAfter(Builder $query, $date)
+    {
+        return $query->where('created_at', '>=', $date);
+    }
+
+    public function scopeCreatedBefore(Builder $query, $date)
+    {
+        return $query->where('created_at', '<=', $date);
+    }
+
+    /**
+     * Scope para status de ubicación
+     */
+    public function scopeByLocationStatus(Builder $query, $status)
+    {
+        return $query->where('location_status', $status);
+    }
+
+    public function scopeWhereLocationStatusIn(Builder $query, array $statuses)
+    {
+        return $query->whereIn('location_status', $statuses);
+    }
+
+    public function scopeWhereLocationStatusNot(Builder $query, $status)
+    {
+        return $query->where('location_status', '!=', $status);
+    }
+
+    /**
+     * Scope para status de activación
+     */
+    public function scopeByActivationStatus(Builder $query, $status)
+    {
+        return $query->where('activation_status', $status);
+    }
+
+    public function scopePreActive(Builder $query)
+    {
+        return $query->where('activation_status', 'Pre-activado');
+    }
+
+    public function scopeActive(Builder $query)
+    {
+        return $query->where('activation_status', 'Activado');
+    }
+
+    public function scopePortado(Builder $query)
+    {
+        return $query->where('activation_status', 'Portado');
+    }
+
+    public function scopeWhereActivationStatusIn(Builder $query, array $statuses)
+    {
+        return $query->whereIn('activation_status', $statuses);
+    }
+
+    /**
+     * Scope para tipo de producto
+     */
+    public function scopeByProductType(Builder $query, $productTypeId)
+    {
+        return $query->where('product_type_id', $productTypeId);
+    }
+
+    public function scopeWhereProductTypeIn(Builder $query, array $productTypeIds)
+    {
+        return $query->whereIn('product_type_id', $productTypeIds);
+    }
+
+    public function scopeWhereProductTypeNot(Builder $query, $productTypeId)
+    {
+        return $query->where('product_type_id', '!=', $productTypeId);
+    }
+
+    /**
+     * Scopes combinados para consultas comunes
+     */
+    public function scopeActiveInLocation(Builder $query, $locationStatus)
+    {
+        return $query->active()->byLocationStatus($locationStatus);
+    }
+
+    public function scopeRecentProducts(Builder $query, $days = 30)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
+    }
+
+    public function scopeByFolioAndType(Builder $query, $folio, $productTypeId)
+    {
+        return $query->byFolio($folio)->byProductType($productTypeId);
+    }
+
+    public function scopeCreatedByWithStatus(Builder $query, $userId, $activationStatus)
+    {
+        return $query->byCreator($userId)->byActivationStatus($activationStatus);
+    }
+
+    /**
+     * Scope para ordenamiento optimizado por índices
+     */
+    public function scopeOrderByFolio(Builder $query, $direction = 'asc')
+    {
+        return $query->orderBy('folio', $direction);
+    }
+
+    public function scopeOrderByCreation(Builder $query, $direction = 'desc')
+    {
+        return $query->orderBy('created_at', $direction);
+    }
+
+    public function scopeOrderByTypeAndFolio(Builder $query)
+    {
+        return $query->orderBy('product_type_id')->orderBy('folio');
+    }
+
+    /**
+     * Scope para reporting y estadísticas
+     */
+    public function scopeForReporting(Builder $query, $startDate, $endDate)
+    {
+        return $query->with(['productType', 'creator'])
+            ->createdBetween($startDate, $endDate)
+            ->orderByCreation();
+    }
+
+    /**
+     * Scope para búsqueda avanzada usando múltiples índices
+     */
+    public function scopeAdvancedSearch(Builder $query, array $filters)
+    {
+        return $query->when(isset($filters['folio']), function ($q) use ($filters) {
+            return $q->searchByFolio($filters['folio']);
+        })
+            ->when(isset($filters['location_status']), function ($q) use ($filters) {
+                return $q->byLocationStatus($filters['location_status']);
+            })
+            ->when(isset($filters['activation_status']), function ($q) use ($filters) {
+                return $q->byActivationStatus($filters['activation_status']);
+            })
+            ->when(isset($filters['product_type_id']), function ($q) use ($filters) {
+                return $q->byProductType($filters['product_type_id']);
+            })
+            ->when(isset($filters['created_by']), function ($q) use ($filters) {
+                return $q->byCreator($filters['created_by']);
+            })
+            ->when(isset($filters['start_date']), function ($q) use ($filters) {
+                $endDate = $filters['end_date'] ?? null;
+                return $q->createdBetween($filters['start_date'], $endDate);
+            });
+    }
+
+
 
     /**
      * Valores defualt para los campos especificados.

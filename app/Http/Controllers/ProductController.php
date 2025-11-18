@@ -20,12 +20,12 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Response $response)
+    public function index2(Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = Product::with(['product_type', 'import'])
+            $list = Product::with(['product_type', 'import', 'import.uploader'])
                 ->orderBy('id', 'desc');
 
             if ($auth->role_id > 2) {
@@ -45,11 +45,56 @@ class ProductController extends Controller
 
         return response()->json($response, $response->data["status_code"]);
     }
+    // En tus controladores
+    public function index(Response $response, Request $request)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $auth = Auth::user();
+            $list = Product::with(['product_type', 'import', 'import.uploader'])
+                ->orderBy('iccid', 'asc');
+
+            Log::info(json_decode($request));
+
+            // Aplicar filtros desde request
+            if ($request->has('product_type_id')) {
+                $list->byProductType($request->product_type_id);
+            }
+
+            if ($request->has('folio')) {
+                $list->searchByFolio($request->folio);
+            }
+
+            if ($request->has('activation_status')) {
+                $list->byActivationStatus($request->activation_status);
+            }
+            if ($request->has('location_status')) {
+                $list->byLocationStatus($request->location_status);
+            }
+
+            if ($auth->role_id > 2 && empty($request)) {
+                $list->where('active', true);
+            }
+
+            // $list = $list->paginate(25);
+            $list = $list->get();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
+            $response->data["result"] = $list;
+        } catch (\Exception $ex) {
+            $msg = "ProductController ~ index ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
 
     /**
      * Mostrar lista para selector.
      */
-    public function selectIndex(Response $response)
+    public function selectIndex(Response $response, Request $request)
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
@@ -68,11 +113,27 @@ class ProductController extends Controller
                         ) as label
                     "),
                     'location_status',
-                    'activation_status'
+                    'activation_status',
+                    'folio'
                 )
-                ->orderBy('celular', 'asc')
-                ->get();
+                ->orderBy('celular', 'asc');
 
+            if ($request->has('product_type_id')) {
+                $list->byProductType($request->product_type_id);
+            }
+
+            if ($request->has('folio')) {
+                $list->searchByFolio($request->folio);
+            }
+
+            if ($request->has('activation_status')) {
+                $list->byActivationStatus($request->activation_status);
+            }
+            if ($request->has('location_status')) {
+                $list->byLocationStatus($request->location_status);
+            }
+
+            $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de productos para selector.';
@@ -165,7 +226,7 @@ class ProductController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $product = Product::with(['product_type', 'import'])->find($id);
+            $product = Product::with(['product_type', 'import', 'import.uploader'])->find($id);
             if ($internal) return $product;
 
             $response->data = ObjResponse::SuccessResponse();
@@ -390,6 +451,73 @@ class ProductController extends Controller
     }
 
 
+    public function getFolios(Response $response, Request $request)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $auth = Auth::user();
+
+            $list = Product::select(
+                "folio as id",
+                "folio as label",
+                DB::raw("LEFT(MIN(celular), 3) as lada"),
+                DB::raw("MIN(fecha) as fecha_preactivacion") // Mantiene NULL
+            )
+                ->whereNull('deleted_at')
+                ->groupBy("folio")
+                ->orderBy("folio", 'asc');
+
+            if ($request->has("activaction_status")) {
+                $list = $list->byActivacionSatus($request->activation_status);
+            }
+
+            $list = $list->get();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
+            $response->data["result"] = $list;
+        } catch (\Exception $ex) {
+            $msg = "ProductController ~ getFolios ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+
+    function filtersBasics()
+    {
+        // Búsqueda simple por folio
+        $products = Product::byFolio('FOL-001')->get();
+
+        // Productos activos en una ubicación específica
+        $products = Product::active()->byLocationStatus('warehouse')->get();
+
+        // Productos creados por el usuario actual en los últimos 7 días
+        $products = Product::byCurrentUser()
+            ->createdAfter(now()->subDays(7))
+            ->orderByCreation()
+            ->get();
+
+        // Búsqueda avanzada con múltiples filtros
+        $products = Product::advancedSearch([
+            'folio' => 'FOL',
+            'activation_status' => 'active',
+            'product_type_id' => 1,
+            'start_date' => '2024-01-01',
+            'end_date' => '2024-12-31'
+        ])->paginate(20);
+
+        // Para reporting
+        $report = Product::forReporting('2024-01-01', '2024-12-31')->get();
+
+        // Productos por tipo con ordenamiento optimizado
+        $products = Product::whereProductTypeIn([1, 2, 3])
+            ->orderByTypeAndFolio()
+            ->get();
+    }
+
+
     /**
      * Pre Activar múltiples registros.
      */
@@ -554,7 +682,5 @@ class ProductController extends Controller
         $seller->name ?? 'Stock',
         'Cliente final'
     );
-
-
     */
 }

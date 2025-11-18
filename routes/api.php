@@ -140,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
+
     // Rutas para la gestión de productos
     // Route::apiResource('product_types', ProductTypeController::class);
     Route::prefix("productTypes")->group(function () {
@@ -153,22 +154,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [ProductTypeController::class, 'deleteMultiple']);
     });
 
-    // Rutas para la gestión de productos
-    // Route::apiResource('products', ProductController::class);
-    Route::prefix("products")->group(function () {
-        Route::get("/", [ProductController::class, 'index']);
-        Route::get("/selectIndex", [ProductController::class, 'selectIndex']);
-        Route::post("/store", [ProductController::class, 'store']);
-        Route::post("/update/{id?}", [ProductController::class, 'update']);
-        Route::get("/id/{id}", [ProductController::class, 'show']);
-        Route::get("/delete/{id}", [ProductController::class, 'delete']);
-        Route::get("/disEnable/{id}/{active}", [ProductController::class, 'disEnable']);
-        Route::get("/deleteMultiple", [ProductController::class, 'deleteMultiple']);
-
-        Route::post("/import", [ProductController::class, 'import']);
-        Route::post("/preActivation", [ProductController::class, 'preActivation']);
-        Route::get('/{id}/movements', [ProductController::class, 'movements']);
-        // Route::post("/import", [ImportController::class, 'store']);
+    Route::prefix("pointsOfSale")->group(function () {
+        Route::get("/", [PointOfSaleController::class, 'index']);
+        Route::get("/selectIndex", [PointOfSaleController::class, 'selectIndex']);
+        Route::post("/createOrUpdate/{id?}", [PointOfSaleController::class, 'createOrUpdate']);
+        Route::get("/id/{id}", [PointOfSaleController::class, 'show']);
+        Route::get("/delete/{id}", [PointOfSaleController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [PointOfSaleController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [PointOfSaleController::class, 'deleteMultiple']);
     });
 
     Route::prefix("lotes")->group(function () {
@@ -181,6 +174,30 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [LoteController::class, 'deleteMultiple']);
     });
 
+
+
+    // Rutas para la gestión de productos
+    // Route::apiResource('products', ProductController::class);
+    Route::prefix("products")->group(function () {
+        Route::get("/", [ProductController::class, 'index']);
+        Route::post("/", [ProductController::class, 'index']);
+        Route::get("/selectIndex", [ProductController::class, 'selectIndex']);
+        Route::post("/selectIndex", [ProductController::class, 'selectIndex']);
+        Route::post("/store", [ProductController::class, 'store']);
+        Route::post("/update/{id?}", [ProductController::class, 'update']);
+        Route::get("/id/{id}", [ProductController::class, 'show']);
+        Route::get("/delete/{id}", [ProductController::class, 'delete']);
+        Route::get("/disEnable/{id}/{active}", [ProductController::class, 'disEnable']);
+        Route::get("/deleteMultiple", [ProductController::class, 'deleteMultiple']);
+
+        Route::post("/import", [ProductController::class, 'import']);
+        Route::post("/getFolios", [ProductController::class, 'getFolios']);
+
+        // Route::post("/preActivation", [ProductController::class, 'preActivation']);
+        Route::get('/{id}/movements', [ProductController::class, 'movements']);
+        // Route::post("/import", [ImportController::class, 'store']);
+    });
+
     Route::prefix("loteDetails")->group(function () {
         Route::get("/", [LoteDetailController::class, 'index']);
         Route::get("/selectIndex", [LoteDetailController::class, 'selectIndex']);
@@ -189,15 +206,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/updateLoteAssignment', [LoteDetailController::class, 'updateLoteAssignment']);
     });
 
-    Route::prefix("pointsOfSale")->group(function () {
-        Route::get("/", [PointOfSaleController::class, 'index']);
-        Route::get("/selectIndex", [PointOfSaleController::class, 'selectIndex']);
-        Route::post("/createOrUpdate/{id?}", [PointOfSaleController::class, 'createOrUpdate']);
-        Route::get("/id/{id}", [PointOfSaleController::class, 'show']);
-        Route::get("/delete/{id}", [PointOfSaleController::class, 'delete']);
-        Route::get("/disEnable/{id}/{active}", [PointOfSaleController::class, 'disEnable']);
-        Route::get("/deleteMultiple", [PointOfSaleController::class, 'deleteMultiple']);
-    });
+
 
     Route::prefix("visits")->group(function () {
         Route::get("/", [VisitController::class, 'index']);

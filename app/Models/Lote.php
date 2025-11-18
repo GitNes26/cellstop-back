@@ -30,7 +30,7 @@ class Lote extends Model
         'quantity',
         'seller_id',
         'description',
-        'created_by',
+        // 'created_by',
         'active',
     ];
 

@@ -59,7 +59,7 @@ class LoteController extends Controller
         try {
             $list = Lote::where('active', true)
                 ->with('seller:id,username,full_name')
-                ->select('id', 'lote', 'seller_id')
+                ->select('id', 'lote', 'seller_id', 'folio', 'lada', 'quantity', 'description', 'preactivation_date')
                 ->orderBy('lote', 'asc')
                 ->get()
                 ->map(fn($lote) => [
@@ -69,6 +69,7 @@ class LoteController extends Controller
                     'folio' => $lote->folio,
                     'lada' => $lote->lada,
                     'quantity' => $lote->quantity,
+                    'description' => $lote->description,
                     'preactivation_date' => $lote->preactivation_date,
                 ]);
 
@@ -136,7 +137,8 @@ class LoteController extends Controller
                 $lote->active = true;
             }
 
-            $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio', 'lada', 'preactivation_date', 'quantity']));
+            // $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio', 'lada', 'preactivation_date', 'quantity']));
+            $lote->fill($request->all());
             $lote->save();
 
             $response->data = ObjResponse::SuccessResponse();
