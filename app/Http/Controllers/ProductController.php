@@ -54,8 +54,6 @@ class ProductController extends Controller
             $list = Product::with(['product_type', 'import', 'import.uploader'])
                 ->orderBy('iccid', 'asc');
 
-            Log::info(json_decode($request));
-
             // Aplicar filtros desde request
             if ($request->has('product_type_id')) {
                 $list->byProductType($request->product_type_id);
@@ -66,10 +64,18 @@ class ProductController extends Controller
             }
 
             if ($request->has('activation_status')) {
-                $list->byActivationStatus($request->activation_status);
+                if (is_array($request->activation_status) === 'array') {
+                    $list->whereActivationStatusIn($request->activation_status);
+                } else {
+                    $list->byActivationStatus($request->activation_status);
+                }
             }
             if ($request->has('location_status')) {
-                $list->byLocationStatus($request->location_status);
+                if (is_array($request->location_status) === 'array') {
+                    $list->whereLocationStatusIn($request->location_status);
+                } else {
+                    $list->byLocationStatus($request->location_status);
+                }
             }
 
             if ($auth->role_id > 2 && empty($request)) {
@@ -127,10 +133,18 @@ class ProductController extends Controller
             }
 
             if ($request->has('activation_status')) {
-                $list->byActivationStatus($request->activation_status);
+                if (is_array($request->activation_status) === 'array') {
+                    $list->whereActivationStatusIn($request->activation_status);
+                } else {
+                    $list->byActivationStatus($request->activation_status);
+                }
             }
             if ($request->has('location_status')) {
-                $list->byLocationStatus($request->location_status);
+                if (is_array($request->location_status) === 'array') {
+                    $list->whereLocationStatusIn($request->location_status);
+                } else {
+                    $list->byLocationStatus($request->location_status);
+                }
             }
 
             $list = $list->get();
