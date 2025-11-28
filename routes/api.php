@@ -16,6 +16,7 @@ use App\Http\Controllers\PointOfSaleController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDistribucionController;
+use App\Http\Controllers\ProductHistoryController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -196,6 +197,22 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route::post("/preActivation", [ProductController::class, 'preActivation']);
         Route::get('/{id}/movements', [ProductController::class, 'movements']);
         // Route::post("/import", [ImportController::class, 'store']);
+    });
+
+
+    Route::prefix('product-histories')->group(function () {
+        Route::get('/', [ProductHistoryController::class, 'index']);
+        Route::get('/selectIndex', [ProductHistoryController::class, 'selectIndex']);
+        Route::get('/{id}', [ProductHistoryController::class, 'show']);
+        Route::post('/create', [ProductHistoryController::class, 'createOrUpdate']);
+        Route::put('/update/{id}', [ProductHistoryController::class, 'createOrUpdate']);
+        Route::delete('/delete/{id}', [ProductHistoryController::class, 'delete']);
+        Route::post('/delete-multiple', [ProductHistoryController::class, 'deleteMultiple']);
+        Route::put('/dis-enable/{id}/{active}', [ProductHistoryController::class, 'disEnable']);
+        Route::post('/import', [ProductHistoryController::class, 'import']);
+        Route::get('/import/stats/{importId}', [ProductHistoryController::class, 'getImportStats']);
+        Route::get('/search', [ProductHistoryController::class, 'search']);
+        Route::get('/product/{productId}', [ProductHistoryController::class, 'byProduct']);
     });
 
     Route::prefix("loteDetails")->group(function () {

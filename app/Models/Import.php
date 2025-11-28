@@ -64,6 +64,14 @@ class Import extends Model
         return $this->hasMany(Product::class);
     }
 
+    /**
+     * Historiales de productos de esta importación
+     */
+    public function productHistories(): HasMany
+    {
+        return $this->hasMany(ProductHistory::class, 'import_id');
+    }
+
 
     /**
      * Valores defualt para los campos especificados.

@@ -417,7 +417,7 @@ class ProductController extends Controller
                         'updated_at' => now(),
                     ];
                 }
-                Log::error($batch);
+                // Log::error($batch);
 
                 if (!empty($batch)) {
                     // Insertar y recuperar IDs reales

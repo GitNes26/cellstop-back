@@ -53,33 +53,6 @@ class Product extends Model
         // 'created_by',
         'active',
     ];
-    // protected $fillable = [
-    //     'product_id',
-
-    //     'filtro',
-    //     'telefono',
-    //     'imei',
-    //     'iccid',
-    //     'estatus_lin',
-    //     'movimiento',
-    //     'fecha_activ',
-    //     'fecha_prim_llam',
-    //     'fecha_dol',
-    //     'estatus_pago',
-    //     'motivo_estatus',
-    //     'monto_com',
-    //     'tipo_comision',
-    //     'evaluacion',
-    //     'fza_vta_pago',
-    //     'fecha_evaluacion',
-    //     'folio_factura',
-    //     'fecha_publicacion',
-    //     'location_status',
-    //     'activation_status',
-
-    //     'import_id',
-    //     'active'
-    // ];
 
     /**
      * Nombre de la tabla asociada al modelo.

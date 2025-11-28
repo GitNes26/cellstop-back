@@ -15,6 +15,7 @@ use App\Models\PointOfSale;
 use App\Models\Portability;
 use App\Models\Position;
 use App\Models\Product;
+use App\Models\ProductHistory;
 use App\Models\ProductMovement;
 use App\Models\ProductType;
 use App\Models\Role;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         Portability::class,
         Position::class,
         Product::class,
+        ProductHistory::class,
         ProductMovement::class,
         ProductType::class,
         Role::class,
