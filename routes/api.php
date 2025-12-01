@@ -16,7 +16,7 @@ use App\Http\Controllers\PointOfSaleController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDistribucionController;
-use App\Http\Controllers\ProductHistoryController;
+use App\Http\Controllers\ProductDetailController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -200,19 +200,19 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
-    Route::prefix('product-histories')->group(function () {
-        Route::get('/', [ProductHistoryController::class, 'index']);
-        Route::get('/selectIndex', [ProductHistoryController::class, 'selectIndex']);
-        Route::get('/{id}', [ProductHistoryController::class, 'show']);
-        Route::post('/create', [ProductHistoryController::class, 'createOrUpdate']);
-        Route::put('/update/{id}', [ProductHistoryController::class, 'createOrUpdate']);
-        Route::delete('/delete/{id}', [ProductHistoryController::class, 'delete']);
-        Route::post('/delete-multiple', [ProductHistoryController::class, 'deleteMultiple']);
-        Route::put('/dis-enable/{id}/{active}', [ProductHistoryController::class, 'disEnable']);
-        Route::post('/import', [ProductHistoryController::class, 'import']);
-        Route::get('/import/stats/{importId}', [ProductHistoryController::class, 'getImportStats']);
-        Route::get('/search', [ProductHistoryController::class, 'search']);
-        Route::get('/product/{productId}', [ProductHistoryController::class, 'byProduct']);
+    Route::prefix('productDetails')->group(function () {
+        Route::get('/', [ProductDetailController::class, 'index']);
+        Route::get('/selectIndex', [ProductDetailController::class, 'selectIndex']);
+        Route::post('/selectIndex', [ProductDetailController::class, 'selectIndex']);
+        Route::get('/id/{id}', [ProductDetailController::class, 'show']);
+        Route::post('/createOrUpdate/{id?}', [ProductDetailController::class, 'createOrUpdate']);
+        Route::delete('/delete/{id}', [ProductDetailController::class, 'delete']);
+        Route::post('/deleteMultiple', [ProductDetailController::class, 'deleteMultiple']);
+        Route::put('/disEnable/{id}/{active}', [ProductDetailController::class, 'disEnable']);
+        Route::post('/import', [ProductDetailController::class, 'import']);
+        Route::get('/import/stats/{importId}', [ProductDetailController::class, 'getImportStats']);
+        Route::get('/search', [ProductDetailController::class, 'search']);
+        Route::get('/product/{productId}', [ProductDetailController::class, 'byProduct']);
     });
 
     Route::prefix("loteDetails")->group(function () {

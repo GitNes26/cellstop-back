@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProductHistory;
+use App\Models\ProductDetail;
 use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class ProductHistoryController extends Controller
+class ProductDetailController extends Controller
 {
     /**
      * Mostrar lista de historiales de productos.
@@ -23,7 +23,7 @@ class ProductHistoryController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = ProductHistory::with([
+            $list = ProductDetail::with([
                 'product',
                 'import',
                 'import.uploadedByUser',
@@ -79,7 +79,7 @@ class ProductHistoryController extends Controller
             $response->data["message"] = 'Petición satisfactoria | Lista de historiales de productos.';
             $response->data["result"] = $list;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ index ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ index ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -94,7 +94,7 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $list = ProductHistory::where('active', true)
+            $list = ProductDetail::where('active', true)
                 ->select(
                     'id',
                     DB::raw("
@@ -132,11 +132,11 @@ class ProductHistoryController extends Controller
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de historiales para selector.';
-            $response->data["alert_text"] = "Historiales encontrados";
+            $response->data["alert_text"] = "Detalles encontrados";
             $response->data["result"] = $list;
             $response->data["toast"] = false;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -154,7 +154,7 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $validator = $this->validateAvailableData($request, 'product_histories', [
+            $validator = $this->validateAvailableData($request, 'product_details', [
                 [
                     'field' => 'iccid',
                     'label' => 'ICCID',
@@ -191,18 +191,18 @@ class ProductHistoryController extends Controller
                 return response()->json($response);
             }
 
-            $productHistory = ProductHistory::find($id);
-            if (!$productHistory) $productHistory = new ProductHistory();
+            $productDetail = ProductDetail::find($id);
+            if (!$productDetail) $productDetail = new ProductDetail();
 
-            $productHistory->fill($request->all());
-            $productHistory->active = true;
-            $productHistory->save();
+            $productDetail->fill($request->all());
+            $productDetail->active = true;
+            $productDetail->save();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = $id ? 'Petición satisfactoria | Historial actualizado.' : 'Petición satisfactoria | Historial registrado.';
-            $response->data["alert_text"] = $id ? 'Historial actualizado' : 'Historial registrado';
+            $response->data["message"] = $id ? 'Petición satisfactoria | Detalle actualizado.' : 'Petición satisfactoria | Detalle registrado.';
+            $response->data["alert_text"] = $id ? 'Detalle actualizado' : 'Detalle registrado';
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -220,26 +220,26 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $productHistory = ProductHistory::with([
+            $productDetail = ProductDetail::with([
                 'product',
                 'import',
                 'import.uploadedByUser',
                 'uploadedByUser'
             ])->find($id);
 
-            if ($internal) return $productHistory;
+            if ($internal) return $productDetail;
 
-            if (!$productHistory) {
-                $response->data = ObjResponse::CatchResponse("Historial no encontrado.");
+            if (!$productDetail) {
+                $response->data = ObjResponse::CatchResponse("Detalle no encontrado.");
                 $response->data["status_code"] = 404;
                 return response()->json($response, 404);
             }
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Historial encontrado.';
-            $response->data["result"] = $productHistory;
+            $response->data["message"] = 'Petición satisfactoria | Detalle encontrado.';
+            $response->data["result"] = $productDetail;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ show ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ show ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -257,17 +257,17 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            ProductHistory::where('id', $id)
+            ProductDetail::where('id', $id)
                 ->update([
                     'active' => false,
                     'deleted_at' => now()
                 ]);
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | Historial eliminado.";
-            $response->data["alert_text"] = "Historial eliminado";
+            $response->data["message"] = "Petición satisfactoria | Detalle eliminado.";
+            $response->data["alert_text"] = "Detalle eliminado";
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ delete ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ delete ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -282,17 +282,17 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            ProductHistory::where('id', $id)
+            ProductDetail::where('id', $id)
                 ->update([
                     'active' => $active === "reactivar" ? 1 : 0
                 ]);
 
             $description = $active == "reactivar" ? 'reactivado' : 'desactivado';
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "Petición satisfactoria | Historial $description.";
-            $response->data["alert_text"] = "Historial $description";
+            $response->data["message"] = "Petición satisfactoria | Detalle $description.";
+            $response->data["alert_text"] = "Detalle $description";
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ disEnable ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -309,7 +309,7 @@ class ProductHistoryController extends Controller
         try {
             $countDeleted = count($request->ids);
 
-            ProductHistory::whereIn('id', $request->ids)->update([
+            ProductDetail::whereIn('id', $request->ids)->update([
                 'active' => false,
                 'deleted_at' => now()
             ]);
@@ -323,7 +323,7 @@ class ProductHistoryController extends Controller
                 ? 'Registro eliminado'
                 : "Registros eliminados ($countDeleted)";
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -363,7 +363,7 @@ class ProductHistoryController extends Controller
             }
 
             // Procesar datos usando el método del modelo
-            $result = ProductHistory::processBulkData($data, $importId);
+            $result = ProductDetail::processBulkData($data, $importId);
 
             if (!empty($result['errors'])) {
                 DB::rollBack();
@@ -388,7 +388,7 @@ class ProductHistoryController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            $msg = "ProductHistoryController ~ import ~ Hubo un error -> " . $e->getMessage();
+            $msg = "ProductDetailController ~ import ~ Hubo un error -> " . $e->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
             return response()->json($response, 500);
@@ -404,13 +404,13 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $stats = ProductHistory::getImportStats($importId);
+            $stats = ProductDetail::getImportStats($importId);
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Estadísticas de importación.';
             $response->data["result"] = $stats;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ getImportStats ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ getImportStats ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -432,7 +432,7 @@ class ProductHistoryController extends Controller
                 return response()->json($response, 400);
             }
 
-            $list = ProductHistory::with([
+            $list = ProductDetail::with([
                 'product',
                 'import',
                 'import.uploadedByUser'
@@ -447,7 +447,7 @@ class ProductHistoryController extends Controller
             $response->data["message"] = 'Petición satisfactoria | Resultados de búsqueda.';
             $response->data["result"] = $list;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ search ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ search ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }
@@ -462,7 +462,7 @@ class ProductHistoryController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $list = ProductHistory::with([
+            $list = ProductDetail::with([
                 'import',
                 'import.uploadedByUser'
             ])
@@ -472,10 +472,10 @@ class ProductHistoryController extends Controller
                 ->get();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Historial del producto.';
+            $response->data["message"] = 'Petición satisfactoria | Detalle del producto.';
             $response->data["result"] = $list;
         } catch (\Exception $ex) {
-            $msg = "ProductHistoryController ~ byProduct ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductDetailController ~ byProduct ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }

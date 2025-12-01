@@ -14,13 +14,35 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
-            'email' => 'sa@gmail.com',
-            'username' => 'sa',
-            'password' => Hash::make('sadmin'),
-            'role_id' => 1, //SuperAdmin
-            'employee_id' => null, //SuperAdmin
-            'created_at' => now()
-        ]);
+        $users = [
+            [
+                'email' => 'sa@gmail.com',
+                'username' => 'sa',
+                'password' => Hash::make('sadmin'),
+                'role_id' => 1, //SuperAdmin
+                'employee_id' => null, //SuperAdmin
+            ],
+            [
+                'email' => 'ruben@gmail.com',
+                'username' => 'RubenDZ',
+                'password' => Hash::make('123456'),
+                'role_id' => 3, //Vendedor
+                'employee_id' => 1, //Ruben Dedor 
+            ]
+        ];
+
+        $data = array_map(function ($user) {
+            return [
+                'email' => $user['email'],
+                'username' => $user['username'],
+                'password' => $user['password'],
+                'role_id' => $user['role_id'],
+                'employee_id' => $user['employee_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }, $users);
+
+        DB::table('users')->insert($data);
     }
 }

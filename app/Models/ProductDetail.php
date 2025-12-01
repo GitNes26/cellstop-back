@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
-class ProductHistory extends Model
+class ProductDetail extends Model
 {
     use HasFactory, Auditable; // Audtiable(logs)
     use SoftDeletes;
@@ -41,7 +42,7 @@ class ProductHistory extends Model
         'active'
     ];
 
-    protected $table = 'product_histories';
+    protected $table = 'product_details';
 
     protected $primaryKey = 'id';
 
@@ -89,7 +90,7 @@ class ProductHistory extends Model
             Import::class,
             'id',           // FK en imports table
             'id',           // FK en users table
-            'import_id',    // FK en product_histories table
+            'import_id',    // FK en product_details table
             'uploaded_by'   // FK en imports table
         );
     }
@@ -99,7 +100,7 @@ class ProductHistory extends Model
      */
 
     /**
-     * Scope para historiales activos
+     * Scope para detalles activos
      */
     public function scopeActive($query)
     {
@@ -147,7 +148,7 @@ class ProductHistory extends Model
     }
 
     /**
-     * Scope para historiales recientes
+     * Scope para detalles recientes
      */
     public function scopeRecent($query, $days = 30)
     {
@@ -221,18 +222,18 @@ class ProductHistory extends Model
     }
 
     /**
-     * Cargar historiales desde un array con validación
+     * Cargar detalles desde un array con validación
      */
-    public static function processBulkData(array $histories, $importId)
+    public static function processBulkData(array $details, $importId)
     {
         $processed = [];
         $errors = [];
         $productsToUpdate = [];
 
-        foreach ($histories as $index => $history) {
+        foreach ($details as $index => $detail) {
             try {
-                $iccid = trim($history['ICCID']);
-                $estatusPago = trim($history['ESTATUS_PAGO'] ?? '');
+                $iccid = trim($detail['ICCID']);
+                $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
 
                 // Validar datos requeridos
                 if (empty($iccid)) {
@@ -243,8 +244,8 @@ class ProductHistory extends Model
                 // Buscar producto relacionado si existe product_id
                 $product = null;
                 $productId = null;
-                if (!empty($history['product_id'])) {
-                    $product = Product::find($history['product_id']);
+                if (!empty($detail['product_id'])) {
+                    $product = Product::find($detail['product_id']);
                     if ($product) {
                         // $errors[] = "Registro {$index}: Producto no encontrado";
                         // continue;
@@ -263,31 +264,31 @@ class ProductHistory extends Model
                 if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado') {
                     $productsToUpdate[] = [
                         'product' => $product,
-                        'history_data' => $history
+                        'detail_data' => $detail
                     ];
                 }
 
                 // Crear el historial
                 $processed[] = [
                     'product_id' => $productId,
-                    'filtro' => $history['FILTRO'] ?? null,
-                    'telefono' => $history['TELEFONO'] ?? null,
-                    'imei' => $history['IMEI'] ?? null,
-                    'iccid' => $history['ICCID'],
-                    'estatus_lin' => $history['ESTATUS_LIN'] ?? null,
-                    'movimiento' => $history['MOVIMIENTO'] ?? null,
-                    'fecha_activ' => $history['FECHA_ACTIV'] ?? null,
-                    'fecha_prim_llam' => $history['FECHA_PRIM_LLAM'] ?? null,
-                    'fecha_dol' => $history['FECHA_DOL'] ?? null,
-                    'estatus_pago' => $history['ESTATUS_PAGO'] ?? null,
-                    'motivo_estatus' => $history['MOTIVO_ESTATUS'] ?? null,
-                    'monto_com' => $history['MONTO_COM'] ?? null,
-                    'tipo_comision' => $history['TIPO_COMISION'] ?? null,
-                    'evaluacion' => $history['EVALUACION'] ?? null,
-                    'fza_vta_pago' => $history['FZA_VTA_PAGO'] ?? null,
-                    'fecha_evaluacion' => $history['FECHA_EVALUACION'] ?? null,
-                    'folio_factura' => $history['FOLIO_FACTURA'] ?? null,
-                    'fecha_publicacion' => $history['FECHA_PUBLICACION'] ?? null,
+                    'filtro' => $detail['FILTRO'] ?? null,
+                    'telefono' => $detail['TELEFONO'] ?? null,
+                    'imei' => $detail['IMEI'] ?? null,
+                    'iccid' => $detail['ICCID'],
+                    'estatus_lin' => $detail['ESTATUS_LIN'] ?? null,
+                    'movimiento' => $detail['MOVIMIENTO'] ?? null,
+                    'fecha_activ' => $detail['FECHA_ACTIV'] ?? null,
+                    'fecha_prim_llam' => $detail['FECHA_PRIM_LLAM'] ?? null,
+                    'fecha_dol' => $detail['FECHA_DOL'] ?? null,
+                    'estatus_pago' => $detail['ESTATUS_PAGO'] ?? null,
+                    'motivo_estatus' => $detail['MOTIVO_ESTATUS'] ?? null,
+                    'monto_com' => $detail['MONTO_COM'] ?? null,
+                    'tipo_comision' => $detail['TIPO_COMISION'] ?? null,
+                    'evaluacion' => $detail['EVALUACION'] ?? null,
+                    'fza_vta_pago' => $detail['FZA_VTA_PAGO'] ?? null,
+                    'fecha_evaluacion' => $detail['FECHA_EVALUACION'] ?? null,
+                    'folio_factura' => $detail['FOLIO_FACTURA'] ?? null,
+                    'fecha_publicacion' => $detail['FECHA_PUBLICACION'] ?? null,
 
                     'import_id' => $importId,
                     'active' => true,
@@ -299,12 +300,12 @@ class ProductHistory extends Model
             }
         }
 
-        // Insertar todos los historiales
+        // Insertar todos los detalles
         if (empty($errors)) {
             self::insert($processed);
 
-            // Actualizar productos después de insertar los historiales
-            self::updateProductsFromHistories($productsToUpdate);
+            // Actualizar productos después de insertar los detalles
+            self::updateProductsFromDetalles($productsToUpdate);
         }
 
         return [
@@ -315,18 +316,18 @@ class ProductHistory extends Model
     }
 
     /**
-     * Actualizar productos basado en los historiales con estatus PAGADA
+     * Actualizar productos basado en los detalles con estatus PAGADA
      */
-    protected static function updateProductsFromHistories(array $productsToUpdate)
+    protected static function updateProductsFromDetalles(array $productsToUpdate)
     {
         foreach ($productsToUpdate as $item) {
             $product = $item['product'];
-            $history = $item['history_data'];
+            $detail = $item['detail_data'];
 
             // Actualizar el producto
             $product->update([
                 'activation_status' => 'Activado',
-                'fecha' => !empty($history['FECHA_ACTIV']) ? \Carbon\Carbon::createFromFormat('d/m/Y', $history['FECHA_ACTIV']) : now(),
+                'fecha' => !empty($detail['FECHA_ACTIV']) ? \Carbon\Carbon::createFromFormat('d/m/Y', $detail['FECHA_ACTIV']) : now(),
                 'updated_at' => now()
             ]);
 
@@ -344,8 +345,8 @@ class ProductHistory extends Model
             Log::info("Producto activado automáticamente", [
                 'product_id' => $product->id,
                 'iccid' => $product->iccid,
-                'estatus_pago' => $history['ESTATUS_PAGO'],
-                'fecha_activ' => $history['FECHA_ACTIV'] ?? 'N/A'
+                'estatus_pago' => $detail['ESTATUS_PAGO'],
+                'fecha_activ' => $detail['FECHA_ACTIV'] ?? 'N/A'
             ]);
         }
     }

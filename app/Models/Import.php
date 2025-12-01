@@ -65,11 +65,11 @@ class Import extends Model
     }
 
     /**
-     * Historiales de productos de esta importación
+     * Detalles de productos de esta importación
      */
-    public function productHistories(): HasMany
+    public function product_details(): HasMany
     {
-        return $this->hasMany(ProductHistory::class, 'import_id');
+        return $this->hasMany(ProductDetail::class, 'import_id');
     }
 
 
