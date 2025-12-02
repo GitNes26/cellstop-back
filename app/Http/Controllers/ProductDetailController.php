@@ -464,7 +464,6 @@ class ProductDetailController extends Controller
         try {
             $list = ProductDetail::with([
                 'import',
-                'import.uploadedByUser'
             ])
                 ->where('product_id', $productId)
                 ->active()

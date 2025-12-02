@@ -234,8 +234,6 @@ class ProductDetail extends Model
             try {
                 $iccid = trim($detail['ICCID']);
                 $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
-                Log::info("Product->paso 3:" . $iccid);
-                Log::info("Product->paso 3:" . $estatusPago);
 
                 // Validar datos requeridos
                 if (empty($iccid)) {
@@ -271,8 +269,6 @@ class ProductDetail extends Model
                     ];
                 }
 
-                Log::info("Product->detail->" . json_encode($detail));
-
                 // Crear el detalle de linea
                 $processed[] = [
                     'product_id' => $productId,
@@ -307,7 +303,6 @@ class ProductDetail extends Model
 
         // Insertar todos los detalles
         if (empty($errors)) {
-            Log::info("a Procesar inserciones");
             self::insert($processed);
 
             // Actualizar productos después de insertar los detalles
@@ -333,7 +328,7 @@ class ProductDetail extends Model
             // Actualizar el producto
             $product->update([
                 'activation_status' => 'Activado',
-                'fecha' => !empty($detail['FECHA_ACTIV']) ? \Carbon\Carbon::createFromFormat('d/m/Y', $detail['FECHA_ACTIV']) : now(),
+                'fecha' => !empty($detail['FECHA_ACTIV']) ? date('d/m/Y', $detail['FECHA_ACTIV']) : now(),
                 'updated_at' => now()
             ]);
 
