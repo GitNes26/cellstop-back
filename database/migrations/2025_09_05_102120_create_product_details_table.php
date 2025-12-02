@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('filtro')->nullable();
             $table->string('telefono')->nullable();
             $table->string('imei')->nullable();
-            $table->string('iccid')->unique()->nullable();
+            $table->string('iccid')->nullable();
             $table->string('estatus_lin')->nullable();
             $table->string('movimiento')->nullable();
             $table->date('fecha_activ')->nullable();

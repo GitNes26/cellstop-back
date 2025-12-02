@@ -234,6 +234,8 @@ class ProductDetail extends Model
             try {
                 $iccid = trim($detail['ICCID']);
                 $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
+                Log::info("Product->paso 3:" . $iccid);
+                Log::info("Product->paso 3:" . $estatusPago);
 
                 // Validar datos requeridos
                 if (empty($iccid)) {
@@ -246,13 +248,14 @@ class ProductDetail extends Model
                 $productId = null;
                 if (!empty($detail['product_id'])) {
                     $product = Product::find($detail['product_id']);
+                    // Log::info("Product->" . json_encode($product));
                     if ($product) {
                         // $errors[] = "Registro {$index}: Producto no encontrado";
                         // continue;
                         $productId = $product->id;
                     }
                 } elseif (!empty($iccid)) {
-                    $product = Product::find($iccid);
+                    $product = Product::where('iccid', $iccid)->first();
                     if (!$product) {
                         $errors[] = "Registro {$index}: Producto no encontrado";
                         continue;
@@ -261,14 +264,16 @@ class ProductDetail extends Model
                 }
 
                 // Verificar si debemos actualizar el producto
-                if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado') {
+                if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado' &&   !collect($productsToUpdate)->pluck('product.id')->contains($productId)) {
                     $productsToUpdate[] = [
                         'product' => $product,
                         'detail_data' => $detail
                     ];
                 }
 
-                // Crear el historial
+                Log::info("Product->detail->" . json_encode($detail));
+
+                // Crear el detalle de linea
                 $processed[] = [
                     'product_id' => $productId,
                     'filtro' => $detail['FILTRO'] ?? null,
@@ -302,6 +307,7 @@ class ProductDetail extends Model
 
         // Insertar todos los detalles
         if (empty($errors)) {
+            Log::info("a Procesar inserciones");
             self::insert($processed);
 
             // Actualizar productos después de insertar los detalles
@@ -335,7 +341,7 @@ class ProductDetail extends Model
             ProductMovementService::log(
                 $product->id,
                 'Activación automática',
-                "Producto activado automáticamente por pago confirmado en historial - ICCID: {$product->iccid}",
+                "Producto activado automáticamente por pago confirmado en detalle de linea - ICCID: {$product->iccid}",
                 'Pre-activado',
                 'Activado',
                 auth()->id()
