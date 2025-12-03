@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\NormalizerDateService;
 use App\Services\ProductMovementService;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -321,6 +322,8 @@ class ProductDetail extends Model
      */
     protected static function updateProductsFromDetalles(array $productsToUpdate)
     {
+        $normalizerData = new NormalizerDateService();
+
         foreach ($productsToUpdate as $item) {
             $product = $item['product'];
             $detail = $item['detail_data'];
@@ -328,7 +331,8 @@ class ProductDetail extends Model
             // Actualizar el producto
             $product->update([
                 'activation_status' => 'Activado',
-                'fecha' => !empty($detail['FECHA_ACTIV']) ? date('d/m/Y', $detail['FECHA_ACTIV']) : now(),
+                'fecha' => !empty($detail['FECHA_ACTIV']) ? $normalizerData->normalizeDate($detail['FECHA_ACTIV']) : now(),
+
                 'updated_at' => now()
             ]);
 
@@ -343,12 +347,12 @@ class ProductDetail extends Model
             );
 
             // Opcional: Log adicional para debugging
-            Log::info("Producto activado automáticamente", [
-                'product_id' => $product->id,
-                'iccid' => $product->iccid,
-                'estatus_pago' => $detail['ESTATUS_PAGO'],
-                'fecha_activ' => $detail['FECHA_ACTIV'] ?? 'N/A'
-            ]);
+            // Log::info("Producto activado automáticamente", [
+            //     'product_id' => $product->id,
+            //     'iccid' => $product->iccid,
+            //     'estatus_pago' => $detail['ESTATUS_PAGO'],
+            //     'fecha_activ' => $detail['FECHA_ACTIV'] ?? 'N/A'
+            // ]);
         }
     }
 
