@@ -20,32 +20,6 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index2(Response $response)
-    {
-        $response->data = ObjResponse::DefaultResponse();
-        try {
-            $auth = Auth::user();
-            $list = Product::with(['product_type', 'import', 'import.uploader'])
-                ->orderBy('id', 'desc');
-
-            if ($auth->role_id > 2) {
-                $list = $list->where('active', true);
-            }
-
-            $list = $list->get();
-
-            $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
-            $response->data["result"] = $list;
-        } catch (\Exception $ex) {
-            $msg = "ProductController ~ index ~ Hubo un error -> " . $ex->getMessage();
-            Log::error($msg);
-            $response->data = ObjResponse::CatchResponse($msg);
-        }
-
-        return response()->json($response, $response->data["status_code"]);
-    }
-    // En tus controladores
     public function index(Response $response, Request $request)
     {
         $response->data = ObjResponse::DefaultResponse();
@@ -83,6 +57,31 @@ class ProductController extends Controller
             }
 
             // $list = $list->paginate(25);
+            $list = $list->get();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
+            $response->data["result"] = $list;
+        } catch (\Exception $ex) {
+            $msg = "ProductController ~ index ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+    public function index2(Response $response)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $auth = Auth::user();
+            $list = Product::with(['product_type', 'import', 'import.uploader'])
+                ->orderBy('id', 'desc');
+
+            if ($auth->role_id > 2) {
+                $list = $list->where('active', true);
+            }
+
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
