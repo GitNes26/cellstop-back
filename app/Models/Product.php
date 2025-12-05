@@ -325,6 +325,17 @@ class Product extends Model
     }
 
     /**
+     * Scope para productos asignados a un vendedor específico
+     */
+    public function scopeAssignedToSeller($query, $sellerId)
+    {
+        return $query->whereHas('loteDetails.lote', function ($q) use ($sellerId) {
+            $q->where('seller_id', $sellerId);
+            // ->where('active', true);
+        });
+    }
+
+    /**
      * Scope para reporting y estadísticas
      */
     public function scopeForReporting(Builder $query, $startDate, $endDate)

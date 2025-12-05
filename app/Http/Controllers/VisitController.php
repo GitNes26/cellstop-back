@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Visit;
 use App\Models\ObjResponse;
+use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -104,6 +105,8 @@ class VisitController extends Controller
                 return response()->json($response);
             }
 
+            DB::beginTransaction();
+
             $visit = Visit::find($id);
             if (!$visit) $visit = new Visit();
 
@@ -130,6 +133,24 @@ class VisitController extends Controller
                     $visit
                 );
             }
+
+            //buscar productos por su id ($request->products_id = "[4,6,8]") hay que tratarlo como array
+            // Buscar producto relacionado si existe product_id
+            $product = Product::find($id);
+            if (!$product) $product = new Product();
+            $product->location_status = 'Distribuido';
+
+            if ($id === null) {
+                ProductMovementService::log(
+                    $product->id,
+                    'Distribuido',
+                    'El producto se encuentra en un punto de venta',
+                    'Asignado',
+                    'Distribuido'
+                );
+            }
+
+
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = $id > 0 ? 'Petición satisfactoria | visita editada.' : 'Petición satisfactoria | visita registrada.';

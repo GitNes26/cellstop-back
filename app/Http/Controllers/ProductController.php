@@ -52,7 +52,10 @@ class ProductController extends Controller
                 }
             }
 
-            if ($auth->role_id > 2 && empty($request)) {
+            // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
+            if ($auth->role_id === 3) {
+                $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+            } elseif ($auth->role_id > 2 && empty($request)) {
                 $list->where('active', true);
             }
 

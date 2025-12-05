@@ -48,7 +48,7 @@ class PointOfSaleController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $list = PointOfSale::where('active', true)
-                ->select('id', DB::raw("CONCAT(name, ' - ', address) as label"))
+                ->select('id', DB::raw("CONCAT(name, ' - ', address) as label, lat, lon"))
                 ->orderBy('name', 'asc')
                 ->get();
 
