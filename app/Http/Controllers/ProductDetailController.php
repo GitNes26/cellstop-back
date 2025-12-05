@@ -370,7 +370,7 @@ class ProductDetailController extends Controller
                 $response->data = ObjResponse::CatchResponse("Errores en la carga masiva");
                 $response->data["errors"] = $result['errors'];
                 $response->data["processed"] = $result['processed'];
-                return response()->json($response, 422);
+                return response()->json($response, 200);
             }
 
             // // Actualizar estadísticas de la importación

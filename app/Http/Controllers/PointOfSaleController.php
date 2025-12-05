@@ -75,7 +75,6 @@ class PointOfSaleController extends Controller
      */
     public function createOrUpdate(Request $request, Response $response, Int $id = null)
     {
-        Log::info($request);
         $response->data = ObjResponse::DefaultResponse();
         try {
             $validator = $this->validateAvailableData($request, 'points_of_sale', [
@@ -101,7 +100,6 @@ class PointOfSaleController extends Controller
                 ]
             ], $id);
 
-            Log::info('Errores de validación:', $validator->errors()->toArray());
 
             if ($validator->fails()) {
 
