@@ -21,6 +21,7 @@ use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitController;
+use App\Models\Menu;
 use App\Models\ObjResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
