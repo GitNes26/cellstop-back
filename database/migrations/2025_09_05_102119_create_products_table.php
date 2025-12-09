@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('comentario')->nullable();                      // Comentario
             $table->string('fza_vta_prepago')->nullable();               // Fuerza de Venta Prepago
             $table->string('fza_vta_padre')->nullable();                 // Fuerza de Venta Padre
-            $table->string('usuario')->nullable();               // Usuario (externo)
+            $table->string('usuario')->nullable();                       // Usuario (externo)
             $table->string('folio')->nullable();                         // Folio
             $table->string('producto')->nullable();                      // Producto
             $table->string('num_orden')->nullable();                     // Número de orden
@@ -44,6 +44,7 @@ return new class extends Migration
             $table->foreignId('product_type_id')->nullable()->constrained('product_types', 'id');
             $table->foreignId('import_id')->nullable()->constrained('imports', 'id');
             // $table->foreignId('created_by')->nullable()->constrained('users', 'id');
+            $table->string('evaluations_rejected', 100)->nullable()->comment('advertencia, peligro, null = ok');                     // Color del dispositivo
 
             $table->boolean('active')->default(true);
             $table->timestamps();

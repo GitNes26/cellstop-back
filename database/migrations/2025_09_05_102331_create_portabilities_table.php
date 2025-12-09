@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('portabilities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->nullable()->constrained('products', 'id');
-            $table->foreignId('user_id')->nullable()->constrained('users', 'id'); //vendedor
+            // $table->foreignId('user_id')->nullable()->constrained('users', 'id'); //vendedor
             $table->string('phone_number', 20)->nullable();
             $table->timestamp('activation_date')->nullable();
             $table->timestamp('portability_date')->nullable();
-            $table->string('status', 50)->default('completada');
+            // $table->string('status', 50)->default('completada');
+            $table->foreignId('import_id')->nullable()->constrained('imports', 'id');
+
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

@@ -24,11 +24,12 @@ class Portability extends Model
      */
     protected $fillable = [
         'product_id',
-        'user_id',
+        // 'user_id',
         'phone_number',
         'activation_date',
         'portability_date',
-        'status',
+        // 'status',
+        'import_id',
         'active'
     ];
 
@@ -51,9 +52,25 @@ class Portability extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function user()
+
+    /**
+     * Importación a la que pertenece este producto (carga masiva)
+     */
+    public function import()
     {
-        return $this->belongsTo(VW_User::class);
+        return $this->belongsTo(Import::class, 'import_id');
+    }
+
+    public function uploader()
+    {
+        return $this->hasOneThrough(
+            VW_User::class,     // Modelo destino
+            Import::class,      // Modelo intermedio
+            'id',               // FK en Import (imports.id)
+            'id',               // FK en User (users.id)  
+            'import_id',        // FK en Product (products.import_id)
+            'uploaded_by'       // FK en Import (imports.uploaded_by)
+        );
     }
 
 

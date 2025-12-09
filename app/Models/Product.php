@@ -50,6 +50,7 @@ class Product extends Model
 
         'product_type_id',
         'import_id',
+        'evaluations_rejected',
         // 'created_by',
         'active',
     ];

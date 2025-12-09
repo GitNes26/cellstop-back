@@ -229,100 +229,477 @@ class ProductDetail extends Model
     {
         $processed = [];
         $errors = [];
+        $duplicates = [];
         $productsToUpdate = [];
+        $productsToFlag = [];
+
+        // Cache para productos ya encontrados
+        $productCache = [];
+        // Cache para evaluaciones recientes por ICCID
+        $recentEvaluationsCache = [];
 
         foreach ($details as $index => $detail) {
             try {
-                $iccid = trim($detail['ICCID']);
+                $iccid = trim($detail['ICCID'] ?? '');
                 $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
+                $evaluacion = trim($detail['EVALUACION'] ?? '');
+                $fechaEvaluacion = trim($detail['FECHA_EVALUACION'] ?? '');
 
-                // Validar datos requeridos
+                // === VALIDACIÓN 1: Campos requeridos ===
                 if (empty($iccid)) {
-                    $errors[] = "Registro {$index}: ICCID es requerido";
+                    $errors[] = [
+                        'index' => $index,
+                        'iccid' => $iccid,
+                        'telefono' => $detail['TELEFONO'] ?? null,
+                        'message' => 'ICCID es requerido'
+                    ];
                     continue;
                 }
 
-                // Buscar producto relacionado si existe product_id
-                $product = null;
-                $productId = null;
-                if (!empty($detail['product_id'])) {
-                    $product = Product::find($detail['product_id']);
-                    // Log::info("Product->" . json_encode($product));
-                    if ($product) {
-                        // $errors[] = "Registro {$index}: Producto no encontrado";
-                        // continue;
-                        $productId = $product->id;
-                    }
-                } elseif (!empty($iccid)) {
-                    $product = Product::where('iccid', $iccid)->first();
-                    if (!$product) {
-                        $errors[] = "Registro {$index}: Producto no encontrado";
-                        continue;
-                    }
-                    $productId = $product->id;
+                // === VALIDACIÓN 2: Buscar duplicados con criterios específicos ===
+                $isDuplicate = self::checkDuplicateCriteria($detail);
+                if ($isDuplicate['is_duplicate']) {
+                    $duplicates[] = [
+                        'index' => $index,
+                        'iccid' => $iccid,
+                        'telefono' => $detail['TELEFONO'] ?? null,
+                        'estatus_pago' => $estatusPago,
+                        'evaluacion' => $evaluacion,
+                        'fecha_evaluacion' => $fechaEvaluacion,
+                        'reason' => $isDuplicate['reason'],
+                        'existing_record' => $isDuplicate['existing_record'] ?? null
+                    ];
+                    continue; // Saltar este registro
                 }
 
-                // Verificar si debemos actualizar el producto
-                if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado' &&   !collect($productsToUpdate)->pluck('product.id')->contains($productId)) {
-                    $productsToUpdate[] = [
+                // === VALIDACIÓN 3: Buscar producto ===
+                $product = null;
+                $productId = null;
+
+                // Buscar en cache primero
+                if (isset($productCache[$iccid])) {
+                    $product = $productCache[$iccid];
+                    $productId = $product->id;
+                } else {
+                    // Buscar por product_id si se proporciona
+                    if (!empty($detail['product_id'])) {
+                        $product = Product::find($detail['product_id']);
+                        if ($product) {
+                            $productId = $product->id;
+                            $productCache[$iccid] = $product;
+                        }
+                    }
+
+                    // Si no se encontró por product_id, buscar por ICCID
+                    if (!$product && !empty($iccid)) {
+                        $product = Product::where('iccid', $iccid)->first();
+                        if (!$product) {
+                            $errors[] = [
+                                'index' => $index,
+                                'iccid' => $iccid,
+                                'telefono' => $detail['TELEFONO'] ?? null,
+                                'message' => 'Producto no encontrado en sistema'
+                            ];
+                            continue;
+                        }
+                        $productId = $product->id;
+                        $productCache[$iccid] = $product;
+                    }
+                }
+
+                if (!$product) {
+                    $errors[] = [
+                        'index' => $index,
+                        'iccid' => $iccid,
+                        'telefono' => $detail['TELEFONO'] ?? null,
+                        'message' => 'No se pudo vincular a un producto'
+                    ];
+                    continue;
+                }
+
+                // === VALIDACIÓN 4: Checar evaluaciones RECHAZADA seguidas ===
+                if ($estatusPago === 'RECHAZADA') {
+                    if (!isset($recentEvaluationsCache[$iccid])) {
+                        // Obtener las últimas 4 evaluaciones del producto
+                        $recentEvaluations = self::where('iccid', $iccid)
+                            ->whereNotNull('estatus_pago')
+                            ->orderBy('fecha_evaluacion', 'desc')
+                            ->orderBy('created_at', 'desc')
+                            ->take(4)
+                            ->pluck('estatus_pago')
+                            ->toArray();
+
+                        $recentEvaluationsCache[$iccid] = $recentEvaluations;
+                    }
+
+                    // Agregar la evaluación actual a las recientes
+                    $currentEvaluations = array_merge([$estatusPago], $recentEvaluationsCache[$iccid]);
+                    $currentEvaluations = array_slice($currentEvaluations, 0, 4); // Mantener solo 4
+
+                    // Contar RECHAZADA seguidas
+                    $rechazadasConsecutivas = 0;
+                    foreach ($currentEvaluations as $eval) {
+                        if ($eval === 'RECHAZADA') {
+                            $rechazadasConsecutivas++;
+                        } else {
+                            break; // Si encuentra una no RECHAZADA, rompe la secuencia
+                        }
+                    }
+
+                    // Marcar producto para actualización de advertencia
+                    if ($rechazadasConsecutivas >= 2) {
+                        $warningLevel = $rechazadasConsecutivas >= 3 ? 'peligro' : 'advertencia';
+
+                        $productsToFlag[$productId] = [
+                            'product' => $product,
+                            'warning_level' => $warningLevel,
+                            'rechazadas_consecutivas' => $rechazadasConsecutivas,
+                            'evaluations' => $currentEvaluations
+                        ];
+                    }
+                }
+
+                // === VALIDACIÓN 5: Actualizar producto si corresponde ===
+                if (
+                    $estatusPago === 'PAGADA' &&
+                    $product->activation_status === 'Pre-activado' &&
+                    !isset($productsToUpdate[$productId])
+                ) {
+
+                    $productsToUpdate[$productId] = [
                         'product' => $product,
                         'detail_data' => $detail
                     ];
                 }
 
-                // Crear el detalle de linea
+                // === PREPARAR REGISTRO PARA INSERCIÓN ===
                 $processed[] = [
                     'product_id' => $productId,
                     'filtro' => $detail['FILTRO'] ?? null,
                     'telefono' => $detail['TELEFONO'] ?? null,
                     'imei' => $detail['IMEI'] ?? null,
-                    'iccid' => $detail['ICCID'],
+                    'iccid' => $iccid,
                     'estatus_lin' => $detail['ESTATUS_LIN'] ?? null,
                     'movimiento' => $detail['MOVIMIENTO'] ?? null,
-                    'fecha_activ' => $detail['FECHA_ACTIV'] ?? null,
-                    'fecha_prim_llam' => $detail['FECHA_PRIM_LLAM'] ?? null,
-                    'fecha_dol' => $detail['FECHA_DOL'] ?? null,
-                    'estatus_pago' => $detail['ESTATUS_PAGO'] ?? null,
+                    'fecha_activ' => !empty($detail['FECHA_ACTIV']) ?
+                        $detail['FECHA_ACTIV'] : null,
+                    'fecha_prim_llam' => !empty($detail['FECHA_PRIM_LLAM']) ?
+                        $detail['FECHA_PRIM_LLAM'] : null,
+                    'fecha_dol' => !empty($detail['FECHA_DOL']) ?
+                        $detail['FECHA_DOL'] : null,
+                    'estatus_pago' => $estatusPago,
                     'motivo_estatus' => $detail['MOTIVO_ESTATUS'] ?? null,
-                    'monto_com' => $detail['MONTO_COM'] ?? null,
+                    'monto_com' => !empty($detail['MONTO_COM']) ?
+                        floatval($detail['MONTO_COM']) : null,
                     'tipo_comision' => $detail['TIPO_COMISION'] ?? null,
-                    'evaluacion' => $detail['EVALUACION'] ?? null,
+                    'evaluacion' => $evaluacion,
                     'fza_vta_pago' => $detail['FZA_VTA_PAGO'] ?? null,
-                    'fecha_evaluacion' => $detail['FECHA_EVALUACION'] ?? null,
+                    'fecha_evaluacion' => !empty($fechaEvaluacion) ?
+                        $fechaEvaluacion : null,
                     'folio_factura' => $detail['FOLIO_FACTURA'] ?? null,
-                    'fecha_publicacion' => $detail['FECHA_PUBLICACION'] ?? null,
-
+                    'fecha_publicacion' => !empty($detail['FECHA_PUBLICACION']) ?
+                        $detail['FECHA_PUBLICACION'] : null,
                     'import_id' => $importId,
                     'active' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             } catch (\Exception $e) {
-                $errors[] = "Registro {$index}: " . $e->getMessage();
+                $errors[] = [
+                    'index' => $index,
+                    'iccid' => $iccid ?? null,
+                    'telefono' => $detail['TELEFONO'] ?? null,
+                    'message' => $e->getMessage()
+                ];
             }
         }
 
-        // Insertar todos los detalles
-        if (empty($errors)) {
-            self::insert($processed);
+        // === PROCESAR INSERCIONES ===
+        $insertedCount = 0;
+        if (empty($errors) || count($processed) > 0) {
+            // Insertar en lotes para mejor performance
+            $chunkSize = 500;
+            $chunks = array_chunk($processed, $chunkSize);
 
-            // Actualizar productos después de insertar los detalles
-            self::updateProductsFromDetalles($productsToUpdate);
+            foreach ($chunks as $chunk) {
+                try {
+                    self::insert($chunk);
+                    $insertedCount += count($chunk);
+                } catch (\Exception $e) {
+                    // Si falla un lote, agregar cada registro como error individual
+                    foreach ($chunk as $record) {
+                        $errors[] = [
+                            'index' => 'batch_error',
+                            'iccid' => $record['iccid'] ?? null,
+                            'telefono' => $record['telefono'] ?? null,
+                            'message' => 'Error en inserción por lote: ' . $e->getMessage()
+                        ];
+                    }
+                }
+            }
+
+            // === ACTUALIZAR PRODUCTOS SI CORRESPONDE ===
+            if (!empty($productsToUpdate)) {
+                self::updateProductsFromDetalles(array_values($productsToUpdate));
+            }
+
+            // === ACTUALIZAR ADVERTENCIAS EN PRODUCTOS ===
+            if (!empty($productsToFlag)) {
+                self::updateProductWarnings(array_values($productsToFlag));
+            }
         }
 
         return [
-            'processed' => count($processed),
-            'errors' => $errors,
-            'products_updated' => count($productsToUpdate)
+            'registros_procesados' => $insertedCount,
+            'errores_encontrados' => $errors,
+            'duplicados_encontrados' => $duplicates,
+            'productos_actualizados' => count($productsToUpdate),
+            'productos_marcados' => count($productsToFlag),
+            'resumen_ejecucion' => [
+                'total_registros' => count($details),
+                'procesos_exitosos' => $insertedCount,
+                'procesos_fallidos' => count($errors),
+                'elementos_duplicados' => count($duplicates),
+                'productos_activar' => count($productsToUpdate),
+                'productos_con_alertas' => count($productsToFlag)
+            ]
         ];
     }
+
+    /**
+     * Checar si un registro es duplicado basado en criterios específicos
+     */
+    private static function checkDuplicateCriteria(array $detail): array
+    {
+        $iccid = trim($detail['ICCID'] ?? '');
+        $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
+        $evaluacion = trim($detail['EVALUACION'] ?? '');
+        $fechaEvaluacion = trim($detail['FECHA_EVALUACION'] ?? '');
+
+        // Si falta algún campo clave, no se considera duplicado (será error de validación)
+        if (empty($iccid) || empty($estatusPago)) {
+            return ['is_duplicate' => false];
+        }
+
+        // Buscar registros existentes con el mismo ICCID
+        $existingRecords = self::where('iccid', $iccid)
+            ->orderBy('created_at', 'desc')
+            ->take(10) // Revisar los últimos 10 registros
+            ->get();
+
+        foreach ($existingRecords as $existing) {
+            // Criterio 1: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION + Misma FECHA_EVALUACION
+            if (
+                $existing->estatus_pago === $estatusPago &&
+                $existing->evaluacion === $evaluacion &&
+                $existing->fecha_evaluacion == $fechaEvaluacion
+                // $existing->fecha_evaluacion == self::parseDate($fechaEvaluacion)
+            ) {
+                return [
+                    'is_duplicate' => true,
+                    'reason' => 'Registro idéntico encontrado (ICCID, Estatus Pago, Evaluación, Fecha Evaluación)',
+                    'existing_record' => [
+                        'id' => $existing->id,
+                        'created_at' => $existing->created_at,
+                        'estatus_pago' => $existing->estatus_pago,
+                        'evaluacion' => $existing->evaluacion,
+                        'fecha_evaluacion' => $existing->fecha_evaluacion
+                    ]
+                ];
+            }
+
+            // Criterio 2: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION (sin fecha)
+            if (
+                $existing->estatus_pago === $estatusPago &&
+                $existing->evaluacion === $evaluacion &&
+                empty($fechaEvaluacion)
+            ) {
+                return [
+                    'is_duplicate' => true,
+                    'reason' => 'Registro similar encontrado (ICCID, Estatus Pago, Evaluación)',
+                    'existing_record' => [
+                        'id' => $existing->id,
+                        'created_at' => $existing->created_at,
+                        'estatus_pago' => $existing->estatus_pago,
+                        'evaluacion' => $existing->evaluacion
+                    ]
+                ];
+            }
+
+            // Criterio 3: Mismo ICCID + Mismo ESTATUS_PAGO en las últimas 24 horas
+            if (
+                $existing->estatus_pago === $estatusPago &&
+                $existing->created_at->gt(now()->subHours(24))
+            ) {
+                return [
+                    'is_duplicate' => true,
+                    'reason' => 'Mismo estatus de pago registrado en las últimas 24 horas',
+                    'existing_record' => [
+                        'id' => $existing->id,
+                        'created_at' => $existing->created_at,
+                        'estatus_pago' => $existing->estatus_pago
+                    ]
+                ];
+            }
+        }
+
+        return ['is_duplicate' => false];
+    }
+
+    /**
+     * Actualizar advertencias en productos
+     */
+    private static function updateProductWarnings(array $productsToFlag): void
+    {
+        foreach ($productsToFlag as $data) {
+            $product = $data['product'];
+            $warningLevel = $data['warning_level'];
+            $rechazadasConsecutivas = $data['rechazadas_consecutivas'];
+
+            // Actualizar el campo evaluations_rejected
+            $product->update([
+                'evaluations_rejected' => $warningLevel,
+                // 'rejected_count' => $rechazadasConsecutivas,
+                // 'last_rejection_check' => now(),
+                'updated_at' => now()
+            ]);
+
+            // // Opcional: Log del cambio
+            // Log::info("Producto marcado con advertencia", [
+            //     'product_id' => $product->id,
+            //     'iccid' => $product->iccid,
+            //     'warning_level' => $warningLevel,
+            //     'rechazadas_consecutivas' => $rechazadasConsecutivas
+            // ]);
+        }
+    }
+
+    /**
+     * Parsear fecha desde diferentes formatos
+     */
+    // private static function parseDate($dateString)
+    // {
+    //     if (empty($dateString)) {
+    //         return null;
+    //     }
+
+    //     try {
+    //         // Formato dd/mm/yyyy
+    //         if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $dateString)) {
+    //             return \Carbon\Carbon::createFromFormat('d/m/Y', $dateString)->format('Y-m-d');
+    //         }
+
+    //         // Formato yyyy-mm-dd
+    //         if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', $dateString)) {
+    //             return $dateString;
+    //         }
+
+    //         // Otros formatos
+    //         return \Carbon\Carbon::parse($dateString)->format('Y-m-d');
+    //     } catch (\Exception $e) {
+    //         Log::warning("No se pudo parsear fecha: {$dateString}");
+    //         return null;
+    //     }
+    // }
+
+    // public static function processBulkData(array $details, $importId)
+    // {
+    //     $processed = [];
+    //     $errors = [];
+    //     $productsToUpdate = [];
+
+    //     foreach ($details as $index => $detail) {
+    //         try {
+    //             $iccid = trim($detail['ICCID']);
+    //             $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
+
+    //             // Validar datos requeridos
+    //             if (empty($iccid)) {
+    //                 $errors[] = "Registro {$index}: ICCID es requerido";
+    //                 continue;
+    //             }
+
+    //             // Buscar producto relacionado si existe product_id
+    //             $product = null;
+    //             $productId = null;
+    //             if (!empty($detail['product_id'])) {
+    //                 $product = Product::find($detail['product_id']);
+    //                 // Log::info("Product->" . json_encode($product));
+    //                 if ($product) {
+    //                     // $errors[] = "Registro {$index}: Producto no encontrado";
+    //                     // continue;
+    //                     $productId = $product->id;
+    //                 }
+    //             } elseif (!empty($iccid)) {
+    //                 $product = Product::where('iccid', $iccid)->first();
+    //                 if (!$product) {
+    //                     $errors[] = "Registro {$index}: Producto no encontrado";
+    //                     continue;
+    //                 }
+    //                 $productId = $product->id;
+    //             }
+
+    //             // Verificar si debemos actualizar el producto
+    //             if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado' &&   !collect($productsToUpdate)->pluck('product.id')->contains($productId)) {
+    //                 $productsToUpdate[] = [
+    //                     'product' => $product,
+    //                     'detail_data' => $detail
+    //                 ];
+    //             }
+
+    //             // Crear el detalle de linea
+    //             $processed[] = [
+    //                 'product_id' => $productId,
+    //                 'filtro' => $detail['FILTRO'] ?? null,
+    //                 'telefono' => $detail['TELEFONO'] ?? null,
+    //                 'imei' => $detail['IMEI'] ?? null,
+    //                 'iccid' => $detail['ICCID'],
+    //                 'estatus_lin' => $detail['ESTATUS_LIN'] ?? null,
+    //                 'movimiento' => $detail['MOVIMIENTO'] ?? null,
+    //                 'fecha_activ' => $detail['FECHA_ACTIV'] ?? null,
+    //                 'fecha_prim_llam' => $detail['FECHA_PRIM_LLAM'] ?? null,
+    //                 'fecha_dol' => $detail['FECHA_DOL'] ?? null,
+    //                 'estatus_pago' => $detail['ESTATUS_PAGO'] ?? null,
+    //                 'motivo_estatus' => $detail['MOTIVO_ESTATUS'] ?? null,
+    //                 'monto_com' => $detail['MONTO_COM'] ?? null,
+    //                 'tipo_comision' => $detail['TIPO_COMISION'] ?? null,
+    //                 'evaluacion' => $detail['EVALUACION'] ?? null,
+    //                 'fza_vta_pago' => $detail['FZA_VTA_PAGO'] ?? null,
+    //                 'fecha_evaluacion' => $detail['FECHA_EVALUACION'] ?? null,
+    //                 'folio_factura' => $detail['FOLIO_FACTURA'] ?? null,
+    //                 'fecha_publicacion' => $detail['FECHA_PUBLICACION'] ?? null,
+
+    //                 'import_id' => $importId,
+    //                 'active' => true,
+    //                 'created_at' => now(),
+    //                 'updated_at' => now(),
+    //             ];
+    //         } catch (\Exception $e) {
+    //             $errors[] = "Registro {$index}: " . $e->getMessage();
+    //         }
+    //     }
+
+    //     // Insertar todos los detalles
+    //     if (empty($errors)) {
+    //         self::insert($processed);
+
+    //         // Actualizar productos después de insertar los detalles
+    //         self::updateProductsFromDetalles($productsToUpdate);
+    //     }
+
+    //     return [
+    //         'processed' => count($processed),
+    //         'errors' => $errors,
+    //         'products_updated' => count($productsToUpdate)
+    //     ];
+    // }
 
     /**
      * Actualizar productos basado en los detalles con estatus PAGADA
      */
     protected static function updateProductsFromDetalles(array $productsToUpdate)
     {
-        $normalizerData = new NormalizerDateService();
+        // $normalizerData = new NormalizerDateService();
 
         foreach ($productsToUpdate as $item) {
             $product = $item['product'];
@@ -331,8 +708,7 @@ class ProductDetail extends Model
             // Actualizar el producto
             $product->update([
                 'activation_status' => 'Activado',
-                'fecha' => !empty($detail['FECHA_ACTIV']) ? $normalizerData->normalizeDate($detail['FECHA_ACTIV']) : now(),
-
+                // 'fecha' => !empty($detail['FECHA_ACTIV']) ? $normalizerData->normalizeDate($detail['FECHA_ACTIV']) : now(),
                 'updated_at' => now()
             ]);
 

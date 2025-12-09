@@ -365,11 +365,11 @@ class ProductDetailController extends Controller
             // Procesar datos usando el método del modelo
             $result = ProductDetail::processBulkData($data, $importId);
 
-            if (!empty($result['errors'])) {
+            if (!empty($result['errores_encontrados'])) {
                 DB::rollBack();
                 $response->data = ObjResponse::CatchResponse("Errores en la carga masiva");
-                $response->data["errors"] = $result['errors'];
-                $response->data["processed"] = $result['processed'];
+                $response->data["errors"] = $result['errores_encontrados'];
+                $response->data["processed"] = $result['registros_procesados'];
                 return response()->json($response, 200);
             }
 
@@ -380,12 +380,13 @@ class ProductDetailController extends Controller
             DB::commit();
 
             $response->data = ObjResponse::SuccessResponse();
-            $response->data["message"] = "{$result['processed']} registros insertados correctamente.";
-            $response->data["alert_text"] = "{$result['processed']} registros insertados correctamente.";
-            $response->data["metrics"] = [
-                'processed' => $result['processed'],
-                'errors' => count($result['errors'])
-            ];
+            $response->data["message"] = "{$result['registros_procesados']} registros insertados correctamente.";
+            $response->data["alert_text"] = "{$result['registros_procesados']} registros insertados correctamente.";
+            $response->data["metrics"] = $result["resumen_ejecucion"];
+            // $response->data["metrics"] = [
+            //     'processed' => $result['registros_procesados'],
+            //     'errors' => count($result['errores_encontrados'])
+            // ];
         } catch (\Exception $e) {
             DB::rollBack();
             $msg = "ProductDetailController ~ import ~ Hubo un error -> " . $e->getMessage();

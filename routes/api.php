@@ -13,6 +13,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersonalInfoController;
 use App\Http\Controllers\PointOfSaleController;
+use App\Http\Controllers\PortabilityController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDistribucionController;
@@ -222,6 +223,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/id/{id}", [LoteDetailController::class, 'show']);
         Route::get("/showByLote/{loteId}", [LoteDetailController::class, 'showByLote']);
         Route::post('/updateLoteAssignment', [LoteDetailController::class, 'updateLoteAssignment']);
+    });
+
+    Route::prefix('portabilities')->group(function () {
+        Route::post('/import', [PortabilityController::class, 'import']);
+        Route::get('/product/{productId}/history', [PortabilityController::class, 'getProductPortabilityHistory']);
+        Route::post('/product/{productId}/revert', [PortabilityController::class, 'revertPortability']);
+        Route::get('/report', [PortabilityController::class, 'getPortabilityReport']);
     });
 
 
