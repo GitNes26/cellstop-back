@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Visit;
 use App\Models\ObjResponse;
+use App\Models\PointOfSale;
+use App\Models\Product;
 use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -118,6 +120,7 @@ class VisitController extends Controller
             }
 
             $visit->fill($request->except(['evidence_photo_file']));
+
             $visit->save();
 
             // Subida de evidencia (si aplica)
@@ -134,28 +137,63 @@ class VisitController extends Controller
                 );
             }
 
-            //buscar productos por su id ($request->products_id = "[4,6,8]") hay que tratarlo como array
-            // Buscar producto relacionado si existe product_id
-            $product = Product::find($id);
-            if (!$product) $product = new Product();
-            $product->location_status = 'Distribuido';
+            // //buscar productos por su id ($request->product_ids = "[4,6,8]") hay que tratarlo como array
+            // // Buscar producto relacionado si existe product_id
+            // $product = Product::find($id);
+            // if (!$product) $product = new Product();
+            // $product->location_status = 'Distribuido';
 
-            if ($id === null) {
+            // $pos = PointOfSale::find($request->pos_id);
+
+            // if ($id === null) {
+            //     ProductMovementService::log(
+            //         $product->id,
+            //         'Distribuido',
+            //         "El producto se encuentra en el punto de venta $pos->name",
+            //         'Asignado',
+            //         'Distribuido'
+            //     );
+            // }
+            // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
+            $productsIds = is_array($request->product_ids)
+                ? $request->product_ids
+                : json_decode($request->product_ids, true);
+
+            if (empty($productsIds)) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "No se recibieron productos"
+                ]);
+            }
+
+            $pos = PointOfSale::find($request->pos_id);
+
+            foreach ($productsIds as $id) {
+
+                $product = Product::find($id);
+                if (!$product) continue;
+
+                $product->location_status = 'Distribuido';
+                $product->save();
+
                 ProductMovementService::log(
                     $product->id,
-                    'Distribuido',
-                    'El producto se encuentra en un punto de venta',
+                    'Distribución',
+                    "El producto se encuentra en el punto de venta $pos->name",
                     'Asignado',
                     'Distribuido'
                 );
             }
 
 
+            DB::commit();
+
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = $id > 0 ? 'Petición satisfactoria | visita editada.' : 'Petición satisfactoria | visita registrada.';
             $response->data["alert_text"] = $id > 0 ? "Visita editada" : "Visita registrada";
         } catch (\Exception $ex) {
+            DB::rollBack();
             $msg = "VisitController ~ createOrUpdate ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);

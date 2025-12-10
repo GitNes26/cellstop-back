@@ -222,13 +222,23 @@ class LoteDetailController extends Controller
                             'Desasignación',
                             "Producto devuelto al almacén por {$authUser->username}",
                             $origin,
-                            'Distribución'
+                            'Stock'
                         );
+
+                        // // Opcional: Log adicional para debugging
+                        // Log::info("DESASIGNAR producto", [
+                        //     'product_id' => $product->id,
+                        //     'iccid' => $product->iccid,
+                        //     'Desasignación',
+                        //     "Producto devuelto al almacén por {$authUser->username}",
+                        //     $origin,
+                        //     'Stock'
+                        // ]);
 
                         $unassigned[] = $product->id;
                     }
 
-                    $dist->delete();
+                    // $dist->delete();
                 }
             }
 
@@ -253,8 +263,18 @@ class LoteDetailController extends Controller
                         'Asignación',
                         "Producto asignado al vendedor {$seller->full_name}",
                         $origin,
-                        'Distribución'
+                        'Asignado'
                     );
+
+                    // // Opcional: Log adicional para debugging
+                    // Log::info("ASIGNAR producto", [
+                    //     'product_id' => $product->id,
+                    //     'iccid' => $product->iccid,
+                    //     'Asignación',
+                    //     "Producto asignado al vendedor {$seller->full_name}",
+                    //     $origin,
+                    //     'Asignado'
+                    // ]);
 
                     $assigned[] = $product->id;
                 }

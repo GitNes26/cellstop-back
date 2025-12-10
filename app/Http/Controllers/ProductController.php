@@ -501,6 +501,100 @@ class ProductController extends Controller
         return response()->json($response, $response->data["status_code"]);
     }
 
+    public function getAvailableFoliosForLote(Response $response, Request $request)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        try {
+            $auth = Auth::user();
+
+            // Consulta principal con un solo JOIN
+            $list = Product::select(
+                "products.folio as id",
+                "products.folio as label",
+                DB::raw("LEFT(MIN(products.celular), 3) as lada"),
+                DB::raw("MIN(products.fecha) as fecha_preactivacion"),
+
+                DB::raw("COUNT(products.id) as total_productos"),
+                // Total de productos válidos para asignar
+                DB::raw("COUNT(CASE WHEN products.location_status = 'Stock' AND products.activation_status = 'Pre-activado' THEN 1 END) AS total_validos"),
+
+                // Total ya asignados (ld)
+                DB::raw("COUNT(ld.product_id) AS asignados"),
+
+                // Disponibles = válidos - asignados
+                DB::raw("COUNT(CASE WHEN products.location_status = 'Stock' AND products.activation_status = 'Pre-activado' THEN 1 END) AS disponibles_por_asignar")
+            )
+                ->leftJoin('lote_details as ld', function ($join) {
+                    $join->on('products.id', '=', 'ld.product_id')
+                        ->where('ld.active', true)
+                        ->whereExists(function ($query) {
+                            $query->select(DB::raw(1))
+                                ->from('lotes as l')
+                                ->whereColumn('l.id', 'ld.lote_id')
+                                ->where('l.active', true);
+                        });
+                })
+                ->whereNull('products.deleted_at')
+                ->where('products.active', true)
+                ->groupBy('products.folio')
+                ->havingRaw("COUNT(products.id) > COUNT(ld.product_id)")
+                // ->havingRaw("(COUNT(CASE WHEN products.location_status = 'Stock' AND products.activation_status = 'Pre-activado' THEN 1 END) - COUNT(ld.product_id)) > 0")
+                ->orderBy('products.folio', 'asc');
+
+
+
+            // Aplicar filtro de activation_status
+            if ($request->has("activation_status")) {
+                $list = $list->byActivacionSatus("Pre-activado");
+            }
+
+            // Aplicar filtro de location_status
+            if ($request->has("location_status")) {
+                $list = $list->byLocationSatus("Stock");
+            }
+
+            // Aplicar filtro de product_type_id si existe
+            // if ($request->has('product_type_id')) {
+            //     $list->byProductType($request->product_type_id);
+            // }
+
+            // // Aplicar filtro de location_status si existe
+            // if ($request->has('location_status')) {
+            //     if (is_array($request->location_status)) {
+            //         $list->whereLocationStatusIn($request->location_status);
+            //     } else {
+            //         $list->byLocationStatus($request->location_status);
+            //     }
+            // }
+
+            $list = $list->get();
+
+            // Agregar información adicional si se solicita
+            if ($request->has('with_products') && $request->with_products) {
+                foreach ($list as $folio) {
+                    $folio->products = Product::where('folio', $folio->id)
+                        ->where('active', true)
+                        ->select('id', 'iccid', 'celular', 'activation_status', 'location_status')
+                        ->get();
+                }
+            }
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'Petición satisfactoria | Lista de folios disponibles para asignación.';
+            $response->data["result"] = $list;
+            $response->data["summary"] = [
+                'total_folios' => $list->count(),
+                'total_productos_disponibles' => $list->sum('disponibles_por_asignar')
+            ];
+        } catch (\Exception $ex) {
+            $msg = "ProductController ~ getAvailableFolios ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+
     function filtersBasics()
     {
         // Búsqueda simple por folio
