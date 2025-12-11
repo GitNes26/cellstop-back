@@ -124,6 +124,7 @@ class MenuSeeder extends Seeder
                         'menu' => 'Lotes',
                         'url' => '/app/catalogos/lotes',
                         'icon' => 'Inventory2Rounded',
+                        'others_permissions' => 'Exportar Plantilla',
                     ],
                     [
                         'menu' => 'Puntos de venta',
@@ -141,31 +142,37 @@ class MenuSeeder extends Seeder
                         'menu' => 'Productos',
                         'url' => '/app/productos',
                         'icon' => 'SimCardRounded',
+                        'others_permissions' => 'Carga Masiva, Importar Detalles, Asignar Productos, Importa Portaciones',
                     ],
                     [
                         'menu' => 'Productos en Stock',
                         'url' => '/app/productos/en-stock',
                         'icon' => 'Inventory2Rounded',
+                        'read_only' => 1,
                     ],
                     [
                         'menu' => 'Productos Asignados',
                         'url' => '/app/productos/asignados',
                         'icon' => 'AssignmentIndRounded',
+                        'read_only' => 1,
                     ],
                     [
                         'menu' => 'Productos Distribuidos',
                         'url' => '/app/productos/distribuidos',
                         'icon' => 'OutboxRounded',
+                        'read_only' => 1,
                     ],
                     [
                         'menu' => 'Productos Activados',
                         'url' => '/app/productos/activados',
                         'icon' => 'VerifiedRounded',
+                        'read_only' => 1,
                     ],
                     [
                         'menu' => 'Productos Portados',
                         'url' => '/app/productos/portados',
                         'icon' => 'SimCardAlertRounded',
+                        'read_only' => 1,
                     ],
                 ]
             ],
