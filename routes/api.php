@@ -3,7 +3,7 @@
 use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImportController;
@@ -245,6 +245,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/deleteMultiple", [VisitController::class, 'deleteMultiple']);
     });
 
+
+    // Dashboard
+    Route::get('/dashboard/stats', [DashboardController::class, 'getDashboardStats']);
+    Route::get('/dashboard/export', [DashboardController::class, 'exportDashboard']);
+
+    // Datos para filtros
+    Route::get('/employees/sellers', [EmployeeController::class, 'getSellers']);
+    Route::get('/product-types', [ProductTypeController::class, 'index']);
 
 
 

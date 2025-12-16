@@ -39,7 +39,15 @@ class PointOfSale extends Model
 
     public function visits()
     {
-        return $this->hasMany(Sale::class, 'pos_id');
+        return $this->hasMany(Visit::class, 'pos_id');
+    }
+
+    /**
+     * Movimientos del producto (por ejemplo distribución o venta)
+     */
+    public function movements()
+    {
+        return $this->hasMany(ProductMovement::class, 'product_id');
     }
 
     /**
