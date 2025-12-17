@@ -134,7 +134,7 @@ class DashboardController extends Controller
          //             'producto' => $product->producto,
          //             'port_date' => $product->port_date,
          //             'vendedor' => $seller ? $seller->name : 'No asignado',
-         //             'vendedor_color' => $seller ? $seller->color : '#ccc',
+         //             'vendedor_pin_color' => $seller ? $seller->pin_color : '#ccc',
          //          ];
          //       });
 
@@ -156,7 +156,7 @@ class DashboardController extends Controller
          //             'portado_count' => $pos->products->where('activation_status', 'Portado')->count(),
          //             'last_visit' => $lastVisit ? $lastVisit->visit_date : null,
          //             'last_seller' => $lastVisit ? $lastVisit->seller->name : null,
-         //             'seller_color' => $lastVisit ? $lastVisit->seller->color : '#ccc',
+         //             'seller_pin_color' => $lastVisit ? $lastVisit->seller->pin_color : '#ccc',
          //             'total_visits' => $pos->visits->count(),
          //          ];
          //       });
@@ -272,7 +272,7 @@ class DashboardController extends Controller
                // Información del vendedor
                'seller_id' => $seller?->id,
                'seller_name' => $personalInfo?->full_name ?? 'No asignado',
-               'seller_color' => $seller?->color ?? '#ccc',
+               'seller_pin_color' => $seller?->pin_color ?? '#ccc',
                'seller_cellphone' => $personalInfo?->cellphone,
                'seller_position' => $personalInfo?->position,
 
@@ -313,7 +313,7 @@ class DashboardController extends Controller
          'position',
          'department',
          'avatar',
-         'color', // Asumiendo que agregaste esta columna
+         'pin_color', // Nuevo campo agregado
       ])
          ->where('role_id', 3) // Solo vendedores
          ->where('active', 1)
@@ -352,7 +352,7 @@ class DashboardController extends Controller
                   'position' => $seller->position,
                   'department' => $seller->department,
                   'avatar' => $seller->avatar,
-                  'color' => $seller->color ?? $this->generateColor($seller->employee_id),
+                  'pin_color' => $seller->pin_color ?? $this->generateColor($seller->employee_id),
                ],
 
                // Estadísticas de productos
@@ -578,7 +578,7 @@ class DashboardController extends Controller
                      'date' => $latestVisit->created_at,
                      'type' => $latestVisit->visit_type,
                      'seller_name' => $personalInfo?->full_name,
-                     'seller_color' => $seller?->color,
+                     'seller_pin_color' => $seller?->pin_color,
                      'chips_delivered' => $latestVisit->chips_delivered,
                      'chips_sold' => $latestVisit->chips_sold,
                      'observations' => $latestVisit->observations,
@@ -586,7 +586,7 @@ class DashboardController extends Controller
 
                   'top_seller' => $topSellerInfo ? [
                      'name' => $topSellerInfo->full_name,
-                     'color' => $topSellerInfo->color,
+                     'pin_color' => $topSellerInfo->pin_color,
                      'visit_count' => $topSeller->visit_count,
                   ] : null,
                ],
@@ -603,7 +603,7 @@ class DashboardController extends Controller
                'primary_seller' => $seller ? [
                   'id' => $seller->id,
                   'name' => $personalInfo?->full_name,
-                  'color' => $seller->color,
+                  'pin_color' => $seller->pin_color,
                   'cellphone' => $personalInfo?->cellphone,
                ] : null,
 
@@ -770,7 +770,7 @@ class DashboardController extends Controller
             ->select([
                'e.id',
                DB::raw('CONCAT(pi.name, " ", pi.plast_name) as seller_name'),
-               'e.color',
+               'e.pin_color',
                DB::raw('COUNT(p.id) as port_count'),
                DB::raw('MAX(p.updated_at) as last_port_date')
             ])
@@ -811,7 +811,7 @@ class DashboardController extends Controller
                }
             )
 
-            ->groupBy('e.id', 'e.color', 'pi.name', 'pi.plast_name')
+            ->groupBy('e.id', 'e.pin_color', 'pi.name', 'pi.plast_name')
             ->orderByDesc('port_count')
             ->limit(10)
             ->get()
@@ -819,7 +819,7 @@ class DashboardController extends Controller
                return [
                   'id' => $seller->id,
                   'name' => $seller->seller_name ?? 'Vendedor ' . $seller->id,
-                  'color' => $seller->color ?? $this->generateSellerColor($seller->id),
+                  'pin_color' => $seller->pin_color ?? $this->generateSellerColor($seller->id),
                   'port_count' => (int) $seller->port_count,
                   'last_port_date' => $seller->last_port_date,
                ];
@@ -937,7 +937,7 @@ class DashboardController extends Controller
       $sellers = Employee::whereHas('role', function ($q) {
          $q->where('name', 'like', '%vendedor%');
       })
-         ->select('id', 'name', 'color')
+         ->select('id', 'name', 'pin_color')
          ->orderBy('name')
          ->get();
 

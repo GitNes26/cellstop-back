@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('img_firm', 255)->nullable();
             $table->string('ine_front', 255)->nullable();
             $table->string('ine_back', 255)->nullable();
+            $table->string('pin_color', 255)->nullable();
             $table->foreignId('position_id')->constrained('positions')->comment('Puesto de trabajo');
             $table->foreignId('department_id')->nullable()->constrained('departments');
             // $table->foreignId('workstation_id')->constrained('workstations');

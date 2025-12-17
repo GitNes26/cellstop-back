@@ -98,6 +98,15 @@ class EmployeeController extends Controller
                         'max' => 'El número celular no puede tener más de 10 caracteres.',
                         'min' => 'El número celular debe tener al menos 10 caracteres.',
                     ]
+                ],
+                [
+                    'field' => 'pin_color',
+                    'label' => 'Color de pin',
+                    'rules' => ['string', 'unique:employees,pin_color' . ($id ? ",$id,active,1" : "")],
+                    'messages' => [
+                        'string' => 'El número celular debe ser texto.',
+                        'unique' => 'El color de pin no está disponible! - :input ya existe, intenta con uno diferente.',
+                    ]
                 ]
             ], $id);
             if ($validator->fails()) {
