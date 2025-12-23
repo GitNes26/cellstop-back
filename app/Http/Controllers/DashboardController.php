@@ -157,7 +157,7 @@ class DashboardController extends Controller
          //             'last_visit' => $lastVisit ? $lastVisit->visit_date : null,
          //             'last_seller' => $lastVisit ? $lastVisit->seller->name : null,
          //             'seller_pin_color' => $lastVisit ? $lastVisit->seller->pin_color : '#ccc',
-         //             'total_visits' => $pos->visits->count(),
+         //             'visits' => $pos->visits->count(),
          //          ];
          //       });
 
@@ -165,9 +165,9 @@ class DashboardController extends Controller
 
          //    return [
          //       'stats' => [
-         //          'total_products' => $totalProducts,
-         //          'total_activated' => $totalActivated,
-         //          'total_portados' => $totalPortados,
+         //          'products' => $totalProducts,
+         //          'activated' => $totalActivated,
+         //          'portados' => $totalPortados,
          //          'portability_rate' => $totalProducts > 0 ? round(($totalPortados / $totalProducts) * 100, 2) : 0,
          //       ],
          //       'portability_by_month' => $portabilityByMonth,
@@ -358,7 +358,7 @@ class DashboardController extends Controller
                // Estadísticas de productos
                'products_stats' => [
                   'total_assigned' => $assignedProducts->count(),
-                  'total_distributed' => $distributedProducts->count(),
+                  'distributed' => $distributedProducts->count(),
                   'total_ported' => $portedProducts->count(),
                   'portability_rate' => $assignedProducts->count() > 0
                      ? round(($portedProducts->count() / $assignedProducts->count()) * 100, 2)
@@ -552,7 +552,7 @@ class DashboardController extends Controller
 
                // Inventario
                'inventory' => [
-                  'total_products' => $products->count(),
+                  'products' => $products->count(),
                   'by_activation_status' => $products->groupBy('activation_status')->map->count(),
                   'by_location_status' => $products->groupBy('location_status')->map->count(),
                   'ported_count' => $products->where('activation_status', 'Portado')->count(),
@@ -623,7 +623,7 @@ class DashboardController extends Controller
    private function getVisitsSummary(array $filters)
    {
       return Visit::select([
-         DB::raw('COUNT(*) as total_visits'),
+         DB::raw('COUNT(*) as visits'),
          DB::raw('SUM(chips_delivered) as total_delivered'),
          DB::raw('SUM(chips_sold) as total_sold'),
          DB::raw('SUM(chips_remaining) as total_remaining'),
@@ -641,7 +641,7 @@ class DashboardController extends Controller
          ->mapWithKeys(function ($item) {
             return [
                $item->visit_type => [
-                  'total_visits' => $item->total_visits,
+                  'visits' => $item->visits,
                   'total_delivered' => $item->total_delivered,
                   'total_sold' => $item->total_sold,
                   'total_remaining' => $item->total_remaining,
@@ -661,10 +661,46 @@ class DashboardController extends Controller
       // Aplicar filtros
       $this->applyFilters($query, $filters);
 
-      $totalProducts = (clone $query)->count();
-      $totalActivated = (clone $query)->where('activation_status', 'Activado')->count();
-      $totalPortados = (clone $query)->where('activation_status', 'Portado')->count();
-      $totalDistribuidos = (clone $query)->where('location_status', 'Distribuido')->count();
+      $totalProducts = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->count();
+
+      $totalInStock = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->where('location_status', 'Stock')->count();
+      $totalPreActivated = (clone $query)->where('activation_status', 'Pre-activado')->count();
+
+      $totalAssigned = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->where('location_status', 'Asignado')->count();
+
+      $totalDistribuidos = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->where('location_status', 'Distribuido')->count();
+      $totalActivated = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->where('activation_status', 'Activado')->count();
+      $totalPortados = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->where('activation_status', 'Portado')->count();
 
       // Vendedores activos
       $activeSellers = VW_User::where('role_id', 3)
@@ -696,15 +732,18 @@ class DashboardController extends Controller
          ->count();
 
       return [
-         'total_products' => $totalProducts,
-         'total_activated' => $totalActivated,
-         'total_portados' => $totalPortados,
-         'total_distribuidos' => $totalDistribuidos,
+         'products' => $totalProducts,
+         'inStock' => $totalInStock,
+         'preActivated' => $totalPreActivated,
+         'assigned' => $totalAssigned,
+         'distributed' => $totalDistribuidos,
+         'activated' => $totalActivated,
+         'portados' => $totalPortados,
          'portability_rate' => $totalProducts > 0 ? round(($totalPortados / $totalProducts) * 100, 2) : 0,
          'activation_rate' => $totalProducts > 0 ? round(($totalActivated / $totalProducts) * 100, 2) : 0,
-         'active_sellers' => $activeSellers,
-         'active_points_of_sale' => $activePOS,
-         'total_visits' => $totalVisits,
+         'sellers' => $activeSellers,
+         'points_of_sale' => $activePOS,
+         'visits' => $totalVisits,
          'avg_products_per_seller' => $activeSellers > 0 ? round($totalProducts / $activeSellers, 2) : 0,
       ];
    }
