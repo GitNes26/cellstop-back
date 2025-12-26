@@ -36,161 +36,21 @@ class DashboardController extends Controller
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
-         // Estadísticas principales (se ejecutan en paralelo)
-         // $stats = DB::transaction(function () use ($filters) {
-         //    $query = Product::query()->active();
-
-         //    // Aplicar filtros
-         //    if (isset($filters['start_date']) && isset($filters['end_date'])) {
-         //       $query->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-         //    }
-
-         //    if (isset($filters['seller_id'])) {
-         //       // Obtener productos asignados a estos vendedores a través de lotes
-         //       $loteIds = Lote::whereIn('seller_id', $filters['seller_id'])
-         //          ->pluck('id');
-
-         //       $productIds = LoteDetail::whereIn('lote_id', $loteIds)
-         //          ->pluck('product_id');
-
-         //       $query->whereIn('id', $productIds);
-         //    }
-
-         //    if (isset($filters['location_status'])) {
-         //       $query->where('location_status', $filters['location_status']);
-         //    }
-
-         //    if (isset($filters['activation_status'])) {
-         //       $query->where('activation_status', $filters['activation_status']);
-         //    }
-
-         //    // 1. Totales generales
-         //    $totalProducts = (clone $query)->count();
-         //    $totalActivated = (clone $query)->where('activation_status', 'Activado')->count();
-         //    $totalPortados = (clone $query)->where('activation_status', 'Portado')->count();
-
-         //    // 2. Portabilidad por mes
-         //    $portabilityByMonth = Product::where('activation_status', 'Portado')
-         //       ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-         //          $q->whereBetween('updated_at', [$filters['start_date'], $filters['end_date']]);
-         //       })
-         //       ->selectRaw('MONTH(updated_at) as month, COUNT(*) as count')
-         //       ->groupBy('month')
-         //       ->orderBy('month')
-         //       ->get()
-         //       ->mapWithKeys(function ($item) {
-         //          return [$item->month => $item->count];
-         //       });
-
-         //    // 3. Top vendedores por portaciones
-         //    $topSellers = DB::table('products as p')
-         //       ->join('lote_details as ld', 'p.id', '=', 'ld.product_id')
-         //       ->join('lotes as l', 'ld.lote_id', '=', 'l.id')
-         //       ->join('employees as e', 'l.seller_id', '=', 'e.id')
-         //       ->where('p.activation_status', 'Portado')
-         //       ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-         //          $q->whereBetween('p.updated_at', [$filters['start_date'], $filters['end_date']]);
-         //       })
-         //       ->select('e.id', 'e.name', DB::raw('COUNT(p.id) as port_count'))
-         //       ->groupBy('e.id', 'e.name')
-         //       ->orderByDesc('port_count')
-         //       ->limit(10)
-         //       ->get();
-
-         //    // 4. Productos más portados
-         //    $topProducts = Product::where('activation_status', 'Portado')
-         //       ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-         //          $q->whereBetween('updated_at', [$filters['start_date'], $filters['end_date']]);
-         //       })
-         //       ->select('producto', DB::raw('COUNT(*) as count'))
-         //       ->groupBy('producto')
-         //       ->orderByDesc('count')
-         //       ->limit(5)
-         //       ->get();
-
-         //    // 5. Distribución por estatus
-         //    $statusDistribution = $query->select('activation_status', DB::raw('COUNT(*) as count'))
-         //       ->groupBy('activation_status')
-         //       ->get()
-         //       ->mapWithKeys(function ($item) {
-         //          return [$item->activation_status => $item->count];
-         //       });
-
-         //    // 6. Números portados con vendedor
-         //    $portedNumbers = Product::where('activation_status', 'Portado')
-         //       ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-         //          $q->whereBetween('updated_at', [$filters['start_date'], $filters['end_date']]);
-         //       })
-         //       ->with(['loteDetails.lote.seller'])
-         //       ->select('celular', 'iccid', 'producto', 'updated_at as port_date')
-         //       ->orderBy('updated_at', 'desc')
-         //       ->limit(50)
-         //       ->get()
-         //       ->map(function ($product) {
-         //          $seller = $product->loteDetails->first()?->lote?->seller;
-         //          return [
-         //             'celular' => $product->celular,
-         //             'iccid' => $product->iccid,
-         //             'producto' => $product->producto,
-         //             'port_date' => $product->port_date,
-         //             'vendedor' => $seller ? $seller->name : 'No asignado',
-         //             'vendedor_pin_color' => $seller ? $seller->pin_color : '#ccc',
-         //          ];
-         //       });
-
-         //    // 7. Puntos de venta con inventario
-         //    $pointsOfSale = PointOfSale::with(['products' => function ($q) {
-         //       $q->where('location_status', 'Distribuido');
-         //    }, 'visits.seller'])
-         //       ->get()
-         //       ->map(function ($pos) {
-         //          $lastVisit = $pos->visits->sortByDesc('visit_date')->first();
-         //          return [
-         //             'id' => $pos->id,
-         //             'name' => $pos->name,
-         //             'lat' => $pos->lat,
-         //             'lng' => $pos->lng,
-         //             'address' => $pos->address,
-         //             'inventory_count' => $pos->products->count(),
-         //             'activated_count' => $pos->products->where('activation_status', 'Activado')->count(),
-         //             'portado_count' => $pos->products->where('activation_status', 'Portado')->count(),
-         //             'last_visit' => $lastVisit ? $lastVisit->visit_date : null,
-         //             'last_seller' => $lastVisit ? $lastVisit->seller->name : null,
-         //             'seller_pin_color' => $lastVisit ? $lastVisit->seller->pin_color : '#ccc',
-         //             'visits' => $pos->visits->count(),
-         //          ];
-         //       });
-
-
-
-         //    return [
-         //       'stats' => [
-         //          'products' => $totalProducts,
-         //          'activated' => $totalActivated,
-         //          'portados' => $totalPortados,
-         //          'portability_rate' => $totalProducts > 0 ? round(($totalPortados / $totalProducts) * 100, 2) : 0,
-         //       ],
-         //       'portability_by_month' => $portabilityByMonth,
-         //       'top_sellers' => $topSellers,
-         //       'top_products' => $topProducts,
-         //       'status_distribution' => $statusDistribution,
-         //       'ported_numbers' => $portedNumbers,
-         //       'points_of_sale' => $pointsOfSale,
-         //    ];
-         // });
 
          // Ejecutar todas las consultas en paralelo
          $results = DB::transaction(function () use ($filters) {
             return [
                'stats' => $this->getGeneralStats($filters),
                'ported_products' => $this->getPortedProductsWithDetails($filters),
-               'sellers_performance' => $this->getSellersPerformance($filters),
-               'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
-               'portability_by_month' => $this->getPortabilityByMonth($filters),
+               // 'sellers_performance' => $this->getSellersPerformance($filters),
+               // 'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
+               // 'portability_by_month' => $this->getPortabilityByMonth($filters),
                'top_sellers' => $this->getTopSellers($filters),
-               'status_distribution' => $this->getStatusDistribution($filters),
+               // 'status_distribution' => $this->getStatusDistribution($filters),
                // 'top_products' => $this->getTopProducts($filters),
-               'visits_summary' => $this->getVisitsSummary($filters),
+               // 'visits_summary' => $this->getVisitsSummary($filters),
+               'ported_products' => $this->getPortedProducts($filters),
+               'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
             ];
          });
 
@@ -808,15 +668,14 @@ class DashboardController extends Controller
          $topSellers = DB::table('products as p')
             ->select([
                'e.id',
-               DB::raw('CONCAT(pi.name, " ", pi.plast_name) as seller_name'),
+               DB::raw('CONCAT(e.name, " ", e.plast_name) as seller_name'),
                'e.pin_color',
                DB::raw('COUNT(p.id) as port_count'),
                DB::raw('MAX(p.updated_at) as last_port_date')
             ])
             ->join('lote_details as ld', 'p.id', '=', 'ld.product_id')
             ->join('lotes as l', 'ld.lote_id', '=', 'l.id')
-            ->join('employees as e', 'l.seller_id', '=', 'e.id')
-            ->leftJoin('personal_infos as pi', 'e.id', '=', 'pi.employee_id')
+            ->join('vw_employees as e', 'l.seller_id', '=', 'e.id')
             ->where('p.activation_status', 'Portado')
             ->where('p.active', 1)
 
@@ -850,7 +709,7 @@ class DashboardController extends Controller
                }
             )
 
-            ->groupBy('e.id', 'e.pin_color', 'pi.name', 'pi.plast_name')
+            ->groupBy('e.id', 'e.pin_color', 'e.name', 'e.plast_name')
             ->orderByDesc('port_count')
             ->limit(10)
             ->get()
@@ -981,5 +840,530 @@ class DashboardController extends Controller
          ->get();
 
       return response()->json($sellers);
+   }
+
+
+   /**
+    * Mostrar productos portados con información del vendedor (versión optimizada)
+    */
+   /**
+    * Obtener productos portados con información del vendedor (versión directa)
+    */
+   public function getPortedProducts(array $filters = [])
+   {
+      try {
+         $auth = Auth::user();
+
+         // Construir consulta base
+         $query = DB::table('products as p')
+            ->select(
+               'p.id',
+               'p.iccid',
+               'p.celular',
+               'p.imei',
+               'p.folio',
+               'p.location_status',
+               'p.updated_at as fecha_portabilidad',
+               'pt.id as product_type_id',
+               'pt.product_type as product_type',
+               'u.id as seller_id',
+               'u.username as seller_name',
+               'u.email as seller_email',
+               'l.id as lote_id',
+               'l.lote as lote_nombre',
+               'l.folio as lote_folio',
+               'ld.assigned_at',
+               'i.name',
+               'iu.username as imported_by_name',
+               'p.created_at as producto_creado',
+               'p.activation_status'
+            )
+            ->leftJoin('product_types as pt', 'p.product_type_id', '=', 'pt.id')
+            ->leftJoin('lote_details as ld', function ($join) {
+               $join->on('p.id', '=', 'ld.product_id')
+                  ->where('ld.active', true);
+            })
+            ->leftJoin('lotes as l', function ($join) {
+               $join->on('ld.lote_id', '=', 'l.id')
+                  ->where('l.active', true);
+            })
+            ->leftJoin('users as u', 'l.seller_id', '=', 'u.id')
+            ->leftJoin('imports as i', 'p.import_id', '=', 'i.id')
+            ->leftJoin('users as iu', 'i.uploaded_by', '=', 'iu.id')
+            ->where('p.activation_status', 'Portado')
+            ->where('p.active', true)
+            ->whereNull('p.deleted_at');
+
+         // === APLICAR FILTROS ===
+
+         // Filtro por tipo de producto
+         if (!empty($filters['product_type_id'])) {
+            $query->where('p.product_type_id', $filters['product_type_id']);
+         }
+
+         // Filtro por folio
+         if (!empty($filters['folio'])) {
+            $query->where('p.folio', 'LIKE', '%' . $filters['folio'] . '%');
+         }
+
+         // Filtro por ICCID
+         if (!empty($filters['iccid'])) {
+            $query->where('p.iccid', 'LIKE', '%' . $filters['iccid'] . '%');
+         }
+
+         // Filtro por teléfono
+         if (!empty($filters['telefono'])) {
+            $query->where('p.celular', 'LIKE', '%' . $filters['telefono'] . '%');
+         }
+
+         // Filtro por fecha de portabilidad
+         if (!empty($filters['start_date'])) {
+            $query->whereDate('p.updated_at', '>=', $filters['start_date']);
+         }
+
+         if (!empty($filters['end_date'])) {
+            $query->whereDate('p.updated_at', '<=', $filters['end_date']);
+         }
+
+         // Filtro por vendedor (puede ser array o single)
+         if (!empty($filters['seller_id'])) {
+            if (is_array($filters['seller_id'])) {
+               $query->whereIn('u.id', $filters['seller_id']);
+            } else {
+               $query->where('u.id', $filters['seller_id']);
+            }
+         }
+
+         // Filtro por location_status
+         if (!empty($filters['location_status'])) {
+            if (is_array($filters['location_status'])) {
+               $query->whereIn('p.location_status', $filters['location_status']);
+            } else {
+               $query->where('p.location_status', $filters['location_status']);
+            }
+         }
+
+         // Filtro por punto de venta (si tienes esa relación)
+         if (!empty($filters['pos_id'])) {
+            $query->where('l.point_of_sale_id', $filters['pos_id']);
+         }
+
+         // Filtro de búsqueda general
+         if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+               $q->where('p.iccid', 'LIKE', '%' . $search . '%')
+                  ->orWhere('p.celular', 'LIKE', '%' . $search . '%')
+                  ->orWhere('p.folio', 'LIKE', '%' . $search . '%')
+                  ->orWhere('p.imei', 'LIKE', '%' . $search . '%')
+                  ->orWhere('u.username', 'LIKE', '%' . $search . '%');
+            });
+         }
+
+         // === RESTRICCIONES POR ROL ===
+         if ($auth->role_id === 3) { // Vendedor
+            $query->where('u.id', $auth->id);
+         }
+
+         // Ordenamiento
+         $orderBy = $filters['order_by'] ?? 'p.updated_at';
+         $orderDir = $filters['order_dir'] ?? 'desc';
+         $query->orderBy($orderBy, $orderDir);
+
+         // === EJECUTAR CONSULTA ===
+         $result = [];
+
+         if (!empty($filters['paginate']) && $filters['paginate']) {
+            $perPage = $filters['per_page'] ?? 25;
+            $paginated = $query->paginate($perPage);
+
+            // Transformar resultados paginados
+            $transformedData = $paginated->getCollection()->map(function ($item) {
+               return $this->transformProductItem($item);
+            });
+
+            // Reemplazar colección
+            $paginated->setCollection($transformedData);
+
+            $result = [
+               'data' => $paginated->items(),
+               'pagination' => [
+                  'current_page' => $paginated->currentPage(),
+                  'per_page' => $paginated->perPage(),
+                  'total' => $paginated->total(),
+                  'last_page' => $paginated->lastPage(),
+                  'from' => $paginated->firstItem(),
+                  'to' => $paginated->lastItem()
+               ]
+            ];
+         } else {
+            $products = $query->get();
+
+            // Transformar resultados
+            $transformedData = $products->map(function ($item) {
+               return $this->transformProductItem($item);
+            });
+
+            $result = [
+               'data' => $transformedData->values()->toArray(),
+               'pagination' => null
+            ];
+         }
+
+         // === CALCULAR ESTADÍSTICAS ===
+         $stats = $this->calculatePortabilityStats($result['data']);
+
+         return [
+            'success' => true,
+            'data' => $result['data'],
+            'stats' => $stats,
+            'pagination' => $result['pagination'],
+            'metadata' => [
+               'total_records' => is_array($result['data']) ? count($result['data']) : $result['pagination']['total'] ?? 0,
+               'filters_applied' => array_filter($filters, fn($value) => !is_null($value)),
+               'generated_at' => now()->toDateTimeString()
+            ]
+         ];
+      } catch (\Exception $ex) {
+         \Log::error('Error en getPortedProducts: ' . $ex->getMessage());
+
+         return [
+            'success' => false,
+            'error' => 'Error al obtener productos portados',
+            'message' => $ex->getMessage(),
+            'data' => [],
+            'stats' => [],
+            'pagination' => null,
+            'metadata' => [
+               'generated_at' => now()->toDateTimeString()
+            ]
+         ];
+      }
+   }
+   /**
+    * Transformar item de producto para respuesta
+    */
+   private function transformProductItem($item)
+   {
+      return [
+         'id' => $item->id,
+         'iccid' => $item->iccid,
+         'celular' => $item->celular,
+         'imei' => $item->imei,
+         'folio' => $item->folio,
+         'location_status' => $item->location_status,
+         'fecha_portabilidad' => $item->fecha_portabilidad,
+         'product_type' => $item->product_type_id ? [
+            'id' => $item->product_type_id,
+            'name' => $item->product_type_name
+         ] : null,
+         'vendedor' => $item->seller_id ? [
+            'id' => $item->seller_id,
+            'name' => $item->seller_name,
+            'email' => $item->seller_email
+         ] : null,
+         'lote' => $item->lote_id ? [
+            'id' => $item->lote_id,
+            'nombre' => $item->lote_nombre,
+            'folio' => $item->lote_folio,
+            'asignado_en' => $item->assigned_at
+         ] : null,
+         'import_info' => $item->file_name ? [
+            'file_name' => $item->file_name,
+            'imported_by' => $item->imported_by_name
+         ] : null,
+         'timeline' => [
+            'producto_creado' => $item->producto_creado,
+            'portado' => $item->fecha_portabilidad
+         ],
+         'activation_status' => $item->activation_status
+      ];
+   }
+
+   /**
+    * Calcular estadísticas de portabilidad
+    */
+   private function calculatePortabilityStats(array $data): array
+   {
+      $collection = collect($data);
+
+      if ($collection->isEmpty()) {
+         return [
+            'summary' => [
+               'total' => 0,
+               'assigned' => 0,
+               'unassigned' => 0,
+               'percentage_assigned' => 0
+            ],
+            'by_location_status' => [],
+            'by_seller' => [],
+            'by_product_type' => []
+         ];
+      }
+
+      $total = $collection->count();
+      $assigned = $collection->where('vendedor', '!=', null)->count();
+      $unassigned = $collection->where('vendedor', null)->count();
+
+      return [
+         'summary' => [
+            'total' => $total,
+            'assigned' => $assigned,
+            'unassigned' => $unassigned,
+            'percentage_assigned' => $total > 0 ? round(($assigned / $total) * 100, 2) : 0
+         ],
+         'by_location_status' => $collection->groupBy('location_status')
+            ->map(function ($items, $status) use ($total) {
+               $count = count($items);
+               return [
+                  'status' => $status ?: 'Sin asignar',
+                  'count' => $count,
+                  'percentage' => round(($count / $total) * 100, 2)
+               ];
+            })->values()->toArray(),
+         'by_seller' => $collection->where('vendedor', '!=', null)
+            ->groupBy('vendedor.id')
+            ->map(function ($items, $sellerId) use ($total) {
+               $firstItem = $items[0];
+               $count = count($items);
+               return [
+                  'seller_id' => $sellerId,
+                  'seller_name' => $firstItem['vendedor']['name'],
+                  'count' => $count,
+                  'percentage' => round(($count / $total) * 100, 2)
+               ];
+            })
+            ->sortByDesc('count')
+            ->values()
+            ->toArray(),
+         'by_product_type' => $collection->where('product_type', '!=', null)
+            ->groupBy('product_type.id')
+            ->map(function ($items, $typeId) use ($total) {
+               $firstItem = $items[0];
+               $count = count($items);
+               return [
+                  'type_id' => $typeId,
+                  'type_name' => $firstItem['product_type']['name'],
+                  'count' => $count,
+                  'percentage' => round(($count / $total) * 100, 2)
+               ];
+            })
+            ->sortByDesc('count')
+            ->values()
+            ->toArray(),
+         'timeline_stats' => [
+            'earliest_portability' => $collection->min('fecha_portabilidad'),
+            'latest_portability' => $collection->max('fecha_portabilidad')
+         ]
+      ];
+   }
+
+   /**
+    * Obtener reporte de portabilidad por vendedor
+    */
+   // public function getPortabilityBySellerReport(array $filters)
+   // {
+   //    $response->data = ObjResponse::DefaultResponse();
+   //    try {
+   //       $auth = Auth::user();
+
+   //       // Para vendedores, solo pueden ver su propio reporte
+   //       if ($auth->role_id === 3) {
+   //          $sellerId = $auth->id;
+   //       } else {
+   //          $sellerId = $request->get('seller_id');
+   //       }
+
+   //       $query = DB::table('products as p')
+   //          ->select(
+   //             'u.id as seller_id',
+   //             'u.name as seller_name',
+   //             'u.email as seller_email',
+   //             DB::raw('COUNT(DISTINCT p.id) as total_portados'),
+   //             DB::raw('MIN(p.updated_at) as primera_portabilidad'),
+   //             DB::raw('MAX(p.updated_at) as ultima_portabilidad'),
+   //             DB::raw('GROUP_CONCAT(DISTINCT p.folio ORDER BY p.folio SEPARATOR ", ") as folios'),
+   //             DB::raw('COUNT(DISTINCT p.folio) as total_folios')
+   //          )
+   //          ->join('lote_details as ld', function ($join) {
+   //             $join->on('p.id', '=', 'ld.product_id')
+   //                ->where('ld.active', true);
+   //          })
+   //          ->join('lotes as l', function ($join) {
+   //             $join->on('ld.lote_id', '=', 'l.id')
+   //                ->where('l.active', true);
+   //          })
+   //          ->join('users as u', 'l.seller_id', '=', 'u.id')
+   //          ->where('p.activation_status', 'Portado')
+   //          ->where('p.active', true)
+   //          ->whereNull('p.deleted_at')
+   //          ->groupBy('u.id', 'u.name', 'u.email');
+
+   //       // Filtrar por vendedor específico
+   //       if ($sellerId) {
+   //          $query->where('u.id', $sellerId);
+   //       }
+
+   //       // Filtrar por rango de fechas
+   //       if ($filters->has('start_date')) {
+   //          $query->whereDate('p.updated_at', '>=', $filters->start_date);
+   //       }
+
+   //       if ($filters->has('end_date')) {
+   //          $query->whereDate('p.updated_at', '<=', $filters->end_date);
+   //       }
+
+   //       $report = $query->get();
+
+   //       $response->data = ObjResponse::SuccessResponse();
+   //       $response->data["message"] = 'Petición satisfactoria | Reporte de portabilidad por vendedor.';
+   //       $response->data["result"] = $report;
+   //       $response->data["summary"] = [
+   //          'total_vendedores' => $report->count(),
+   //          'total_productos_portados' => $report->sum('total_portados'),
+   //          'total_folios' => $report->sum('total_folios')
+   //       ];
+   //    } catch (\Exception $ex) {
+   //       \Log::error('Error en getPortabilityBySellerReport: ' . $ex->getMessage());
+   //       // $msg = "ProductController ~ getPortabilityBySellerReport ~ Hubo un error -> " . $ex->getMessage();
+   //       // Log::error($msg);
+   //       // $response->data = ObjResponse::CatchResponse($msg);
+   //    }
+
+   //    return response()->json($response, $response->data["status_code"]);
+   // }
+   /**
+    * Obtener reporte de portabilidad por vendedor (versión directa)
+    */
+   public function getPortabilityBySellerReport(array $filters)
+   {
+      try {
+         $auth = Auth::user();
+
+         // Para vendedores, solo pueden ver su propio reporte
+         if ($auth->role_id === 3) {
+            $sellerId = $auth->id;
+         } else {
+            $sellerId = $filters['seller_id'] ?? null;
+         }
+
+         $query = DB::table('products as p')
+            ->select(
+               'u.id as seller_id',
+               'u.username as seller_name',
+               'u.email as seller_email',
+               DB::raw('COUNT(DISTINCT p.id) as total_portados'),
+               DB::raw('MIN(p.updated_at) as primera_portabilidad'),
+               DB::raw('MAX(p.updated_at) as ultima_portabilidad'),
+               DB::raw('GROUP_CONCAT(DISTINCT p.folio ORDER BY p.folio SEPARATOR ", ") as folios'),
+               DB::raw('COUNT(DISTINCT p.folio) as total_folios'),
+               DB::raw('COUNT(DISTINCT p.product_type_id) as tipos_producto_diferentes'),
+               DB::raw('ROUND(AVG(DATEDIFF(p.updated_at, p.created_at)), 2) as dias_promedio_activacion')
+            )
+            ->join('lote_details as ld', function ($join) {
+               $join->on('p.id', '=', 'ld.product_id')
+                  ->where('ld.active', true);
+            })
+            ->join('lotes as l', function ($join) {
+               $join->on('ld.lote_id', '=', 'l.id')
+                  ->where('l.active', true);
+            })
+            ->join('users as u', 'l.seller_id', '=', 'u.id')
+            ->where('p.activation_status', 'Portado')
+            ->where('p.active', true)
+            ->whereNull('p.deleted_at')
+            ->groupBy('u.id', 'u.username', 'u.email')
+            ->orderBy('total_portados', 'desc');
+
+         // Filtrar por vendedor específico
+         if ($sellerId) {
+            if (is_array($sellerId)) {
+               $query->whereIn('u.id', $sellerId);
+            } else {
+               $query->where('u.id', $sellerId);
+            }
+         }
+
+         // Filtrar por rango de fechas
+         if (isset($filters['start_date'])) {
+            $query->whereDate('p.updated_at', '>=', $filters['start_date']);
+         }
+
+         if (isset($filters['end_date'])) {
+            $query->whereDate('p.updated_at', '<=', $filters['end_date']);
+         }
+
+         // Filtrar por tipo de producto
+         if (isset($filters['product_type_id'])) {
+            $query->where('p.product_type_id', $filters['product_type_id']);
+         }
+
+         // Filtrar por location_status
+         if (isset($filters['location_status'])) {
+            $query->where('p.location_status', $filters['location_status']);
+         }
+
+         $report = $query->get();
+
+         // Procesar los resultados
+         $processedReport = $report->map(function ($item) {
+            return [
+               'seller' => [
+                  'id' => $item->seller_id,
+                  'name' => $item->seller_name,
+                  'email' => $item->seller_email
+               ],
+               'metrics' => [
+                  'total_portados' => (int) $item->total_portados,
+                  'total_folios' => (int) $item->total_folios,
+                  'tipos_producto_diferentes' => (int) $item->tipos_producto_diferentes,
+                  'dias_promedio_activacion' => (float) $item->dias_promedio_activacion
+               ],
+               'timeline' => [
+                  'primera_portabilidad' => $item->primera_portabilidad,
+                  'ultima_portabilidad' => $item->ultima_portabilidad
+               ],
+               'folios' => $item->folios ? explode(', ', $item->folios) : []
+            ];
+         });
+
+         // Calcular estadísticas generales
+         $summary = [
+            'total_vendedores' => $report->count(),
+            'total_productos_portados' => $report->sum('total_portados'),
+            'total_folios' => $report->sum('total_folios'),
+            'promedio_portados_por_vendedor' => $report->avg('total_portados') ?? 0,
+            'vendedor_top' => $report->isNotEmpty() ? [
+               'name' => $report->first()->seller_name,
+               'total_portados' => $report->first()->total_portados
+            ] : null
+         ];
+
+         // Retornar estructura directamente
+         return [
+            'success' => true,
+            'data' => $processedReport,
+            'summary' => $summary,
+            'metadata' => [
+               'total_records' => $processedReport->count(),
+               'filters_applied' => array_filter($filters, fn($value) => !is_null($value)),
+               'generated_at' => now()->toDateTimeString()
+            ]
+         ];
+      } catch (\Exception $ex) {
+         \Log::error('Error en getPortabilityBySellerReport: ' . $ex->getMessage());
+
+         // Retornar estructura de error directamente
+         return [
+            'success' => false,
+            'error' => 'Error al obtener reporte de portabilidad por vendedor',
+            'message' => $ex->getMessage(),
+            'data' => [],
+            'summary' => [],
+            'metadata' => [
+               'generated_at' => now()->toDateTimeString()
+            ]
+         ];
+      }
    }
 }

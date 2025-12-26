@@ -247,12 +247,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Dashboard
-    Route::get('/dashboard/stats', [DashboardController::class, 'getDashboardStats']);
-    Route::get('/dashboard/export', [DashboardController::class, 'exportDashboard']);
+    Route::prefix("dashboard")->group(function () {
+        Route::get('/stats', [DashboardController::class, 'getDashboardStats']);
+        
+        Route::get('/export', [DashboardController::class, 'exportDashboard']);
+        Route::get('/ported', [ProductController::class, 'getPortedProducts']);
+        Route::get('/ported/report-by-seller', [ProductController::class, 'getPortabilityBySellerReport']);
+    });
 
     // Datos para filtros
     Route::get('/employees/sellers', [EmployeeController::class, 'getSellers']);
     Route::get('/product-types', [ProductTypeController::class, 'index']);
+
 
 
 

@@ -159,12 +159,12 @@ class VisitController extends Controller
                 ? $request->product_ids
                 : json_decode($request->product_ids, true);
 
-            if (empty($productsIds)) {
-                return response()->json([
-                    "success" => false,
-                    "message" => "No se recibieron productos"
-                ]);
-            }
+            // if (empty($productsIds)) {
+            //     return response()->json([
+            //         "success" => false,
+            //         "message" => "No se recibieron productos"
+            //     ]);
+            // }
 
             $pos = PointOfSale::find($request->pos_id);
 
