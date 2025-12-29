@@ -33,19 +33,31 @@ class ProductController extends Controller
                 $list->byProductType($request->product_type_id);
             }
 
+            if ($request->has('id')) {
+                if (is_array($request->id)) { #=== 'array') {
+                    $list->whereIn('id', $request->id);
+                } else {
+                    $list->where('id', $request->id);
+                }
+            }
+
             if ($request->has('folio')) {
-                $list->searchByFolio($request->folio);
+                if (is_array($request->folio)) { #=== 'array') {
+                    $list->whereFolioIn($request->folio);
+                } else {
+                    $list->searchByFolio($request->folio);
+                }
             }
 
             if ($request->has('activation_status')) {
-                if (is_array($request->activation_status) === 'array') {
+                if (is_array($request->activation_status)) { #=== 'array') {
                     $list->whereActivationStatusIn($request->activation_status);
                 } else {
                     $list->byActivationStatus($request->activation_status);
                 }
             }
             if ($request->has('location_status')) {
-                if (is_array($request->location_status) === 'array') {
+                if (is_array($request->location_status)) { #=== 'array') {
                     $list->whereLocationStatusIn($request->location_status);
                 } else {
                     $list->byLocationStatus($request->location_status);
@@ -130,25 +142,42 @@ class ProductController extends Controller
                 $list->byProductType($request->product_type_id);
             }
 
+            Log::info($request->all());
+            Log::info("es array?" . is_array($request->id));
+            if ($request->has('id')) {
+                if (is_array($request->id)) { #=== 'array') {
+                    $list->whereIn('id', $request->id);
+                } else {
+                    $list->where('id', $request->id);
+                }
+            }
+
             if ($request->has('folio')) {
                 $list->searchByFolio($request->folio);
             }
 
             if ($request->has('activation_status')) {
-                if (is_array($request->activation_status) === 'array') {
+                if (is_array($request->activation_status)) { #=== 'array') {
                     $list->whereActivationStatusIn($request->activation_status);
                 } else {
                     $list->byActivationStatus($request->activation_status);
                 }
             }
             if ($request->has('location_status')) {
-                if (is_array($request->location_status) === 'array') {
+                if (is_array($request->location_status)) { #=== 'array') {
                     $list->whereLocationStatusIn($request->location_status);
                 } else {
                     $list->byLocationStatus($request->location_status);
                 }
             }
 
+            // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
+            if ($auth->role_id === 3) {
+                $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+            }
+
+            Log::info($list->toSql());
+            Log::info($list->getBindings());
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();

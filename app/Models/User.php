@@ -79,6 +79,11 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class);
     }
 
+    public function pointsOfSale()
+    {
+        return $this->hasMany(PointOfSale::class);
+    }
+
     /**
      * Valores defualt para los campos especificados.
      * @var array

@@ -169,6 +169,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix("lotes")->group(function () {
         Route::get("/", [LoteController::class, 'index']);
+        Route::post("/", [LoteController::class, 'index']);
         Route::get("/selectIndex", [LoteController::class, 'selectIndex']);
         Route::post("/createOrUpdate/{id?}", [LoteController::class, 'createOrUpdate']);
         Route::get("/id/{id}", [LoteController::class, 'show']);
@@ -249,7 +250,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::prefix("dashboard")->group(function () {
         Route::get('/stats', [DashboardController::class, 'getDashboardStats']);
-        
+
         Route::get('/export', [DashboardController::class, 'exportDashboard']);
         Route::get('/ported', [ProductController::class, 'getPortedProducts']);
         Route::get('/ported/report-by-seller', [ProductController::class, 'getPortabilityBySellerReport']);

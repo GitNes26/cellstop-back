@@ -184,6 +184,11 @@ class Product extends Model
         return $query->where('folio', $folio);
     }
 
+    public function scopeWhereFolioIn(Builder $query, array $folios)
+    {
+        return $query->whereIn('folio', $folios);
+    }
+
     public function scopeByFolioRange(Builder $query, $startFolio, $endFolio = null)
     {
         if ($endFolio) {
@@ -206,8 +211,6 @@ class Product extends Model
         if ($endDate) {
             return $query->whereBetween('created_at', [$startDate, $endDate]);
         }
-
-        return $query->whereDate('created_at', $startDate);
     }
 
     public function scopeCreatedAfter(Builder $query, $date)

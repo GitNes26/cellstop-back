@@ -17,9 +17,11 @@ return new class extends Migration
             $table->string('contact_name', 100)->nullable();
             $table->string('contact_phone', 20)->nullable();
             $table->text('address')->nullable();
-            $table->decimal('lat', 10, 8)->nullable();
-            $table->decimal('lon', 11, 8)->nullable();
+            $table->decimal('lat', 25, 18)->nullable();
+            $table->decimal('lon', 25, 18)->nullable();
             $table->text('ubication')->nullable();
+            $table->foreignId('seller_id')->constrained('users')->onDelete('restrict')->onUpdate('cascade');
+
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

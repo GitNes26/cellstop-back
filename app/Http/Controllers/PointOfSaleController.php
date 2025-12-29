@@ -25,6 +25,11 @@ class PointOfSaleController extends Controller
 
             $list = PointOfSale::orderBy('id', 'desc');
             if ($auth->role_id > 2) $list = $list->where('active', true);
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
@@ -47,10 +52,17 @@ class PointOfSaleController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
+            $auth = Auth::user();
+
             $list = PointOfSale::where('active', true)
                 ->select('id', DB::raw("CONCAT(name, ' - ', address) as label, lat, lon"))
-                ->orderBy('name', 'asc')
-                ->get();
+                ->orderBy('name', 'asc');
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
+            $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de puntos de venta.';
