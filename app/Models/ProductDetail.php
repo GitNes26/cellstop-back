@@ -460,7 +460,7 @@ class ProductDetail extends Model
                 'procesos_exitosos' => $insertedCount,
                 'procesos_fallidos' => count($errors),
                 'elementos_duplicados' => count($duplicates),
-                'productos_activar' => count($productsToUpdate),
+                'productos_afectados' => count($productsToUpdate),
                 'productos_con_alertas' => count($productsToFlag)
             ]
         ];

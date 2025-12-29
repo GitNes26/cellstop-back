@@ -117,6 +117,7 @@ class ProductController extends Controller
     public function selectIndex(Response $response, Request $request)
     {
         $response->data = ObjResponse::DefaultResponse();
+        $auth = Auth::user();
         try {
             $list = Product::where('active', true)
                 ->select(
@@ -142,8 +143,7 @@ class ProductController extends Controller
                 $list->byProductType($request->product_type_id);
             }
 
-            Log::info($request->all());
-            Log::info("es array?" . is_array($request->id));
+            // Log::info($request->all());
             if ($request->has('id')) {
                 if (is_array($request->id)) { #=== 'array') {
                     $list->whereIn('id', $request->id);
@@ -176,8 +176,8 @@ class ProductController extends Controller
                 $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
             }
 
-            Log::info($list->toSql());
-            Log::info($list->getBindings());
+            // Log::info($list->toSql());
+            // Log::info($list->getBindings());
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
@@ -654,6 +654,90 @@ class ProductController extends Controller
         $products = Product::whereProductTypeIn([1, 2, 3])
             ->orderByTypeAndFolio()
             ->get();
+    }
+
+    /**
+     * Mostrar lista para selector.
+     */
+    public function selectIndexProductForVisit(Response $response, Request $request)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        $auth = Auth::user();
+
+        try {
+            $list = Product::where('active', true)
+                ->select(
+                    'id',
+                    DB::raw("
+                        CONCAT_WS(
+                            ' - ',
+                            NULLIF(celular, ''),
+                            NULLIF(iccid, ''),
+                            IFNULL(
+                                DATE_FORMAT(fecha, '%Y/%m/%d'),
+                                ''
+                            )
+                        ) as label
+                    "),
+                    'location_status',
+                    'activation_status',
+                    'folio'
+                )
+                ->orderBy('celular', 'asc');
+
+            if ($request->has('product_type_id')) {
+                $list->byProductType($request->product_type_id);
+            }
+
+            // Log::info($request->all());
+            if ($request->has('id')) {
+                if (is_array($request->id)) { #=== 'array') {
+                    $list->whereIn('id', $request->id);
+                } else {
+                    $list->where('id', $request->id);
+                }
+            }
+
+            if ($request->has('folio')) {
+                $list->searchByFolio($request->folio);
+            }
+
+            if ($request->has('activation_status')) {
+                if (is_array($request->activation_status)) { #=== 'array') {
+                    $list->whereActivationStatusIn($request->activation_status);
+                } else {
+                    $list->byActivationStatus($request->activation_status);
+                }
+            }
+            if ($request->has('location_status')) {
+                if (is_array($request->location_status)) { #=== 'array') {
+                    $list->whereLocationStatusIn($request->location_status);
+                } else {
+                    $list->byLocationStatus($request->location_status);
+                }
+            }
+
+            // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
+            if ($auth->role_id === 3) {
+                $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+            }
+
+            // Log::info($list->toSql());
+            // Log::info($list->getBindings());
+            $list = $list->get();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = 'Petición satisfactoria | Lista de productos para selector.';
+            $response->data["alert_text"] = "Productos encontrados";
+            $response->data["result"] = $list;
+            $response->data["toast"] = false;
+        } catch (\Exception $ex) {
+            $msg = "ProductController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
     }
 
 
