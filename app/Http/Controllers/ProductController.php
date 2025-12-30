@@ -153,7 +153,11 @@ class ProductController extends Controller
             }
 
             if ($request->has('folio')) {
-                $list->searchByFolio($request->folio);
+                if (is_array($request->folio)) { #=== 'array') {
+                    $list->whereFolioIn($request->folio);
+                } else {
+                    $list->searchByFolio($request->folio);
+                }
             }
 
             if ($request->has('activation_status')) {

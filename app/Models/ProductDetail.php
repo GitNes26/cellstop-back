@@ -243,7 +243,7 @@ class ProductDetail extends Model
                 $iccid = trim($detail['ICCID'] ?? '');
                 $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
                 $evaluacion = trim($detail['EVALUACION'] ?? '');
-                $fechaEvaluacion = trim($detail['FECHA_EVALUACION'] ?? '');
+                $fechaEvaluacion = trim($detail['FECHA EVALUACION'] ?? '');
 
                 // === VALIDACIÓN 1: Campos requeridos ===
                 if (empty($iccid)) {
@@ -346,6 +346,10 @@ class ProductDetail extends Model
                         }
                     }
 
+                    // Actualizar cache para que siguientes registros procesados en esta misma importación
+                    // tomen en cuenta las evaluaciones ya procesadas (incluida la actual)
+                    $recentEvaluationsCache[$iccid] = $currentEvaluations;
+
                     // Marcar producto para actualización de advertencia
                     if ($rechazadasConsecutivas >= 2) {
                         $warningLevel = $rechazadasConsecutivas >= 3 ? 'peligro' : 'advertencia';
@@ -379,14 +383,14 @@ class ProductDetail extends Model
                     'telefono' => $detail['TELEFONO'] ?? null,
                     'imei' => $detail['IMEI'] ?? null,
                     'iccid' => $iccid,
-                    'estatus_lin' => $detail['ESTATUS_LIN'] ?? null,
+                    'estatus_lin' => $detail['ESTATUS LIN'] ?? null,
                     'movimiento' => $detail['MOVIMIENTO'] ?? null,
                     'fecha_activ' => !empty($detail['FECHA_ACTIV']) ?
                         $detail['FECHA_ACTIV'] : null,
                     'fecha_prim_llam' => !empty($detail['FECHA_PRIM_LLAM']) ?
                         $detail['FECHA_PRIM_LLAM'] : null,
-                    'fecha_dol' => !empty($detail['FECHA_DOL']) ?
-                        $detail['FECHA_DOL'] : null,
+                    'fecha_dol' => !empty($detail['FECHA DOL']) ?
+                        $detail['FECHA DOL'] : null,
                     'estatus_pago' => $estatusPago,
                     'motivo_estatus' => $detail['MOTIVO_ESTATUS'] ?? null,
                     'monto_com' => !empty($detail['MONTO_COM']) ?
@@ -396,9 +400,9 @@ class ProductDetail extends Model
                     'fza_vta_pago' => $detail['FZA_VTA_PAGO'] ?? null,
                     'fecha_evaluacion' => !empty($fechaEvaluacion) ?
                         $fechaEvaluacion : null,
-                    'folio_factura' => $detail['FOLIO_FACTURA'] ?? null,
-                    'fecha_publicacion' => !empty($detail['FECHA_PUBLICACION']) ?
-                        $detail['FECHA_PUBLICACION'] : null,
+                    'folio_factura' => $detail['FOLIO FACTURA'] ?? null,
+                    'fecha_publicacion' => !empty($detail['FECHA PUBLICACION']) ?
+                        $detail['FECHA PUBLICACION'] : null,
                     'import_id' => $importId,
                     'active' => true,
                     'created_at' => now(),
@@ -461,7 +465,8 @@ class ProductDetail extends Model
                 'procesos_fallidos' => count($errors),
                 'elementos_duplicados' => count($duplicates),
                 'productos_afectados' => count($productsToUpdate),
-                'productos_con_alertas' => count($productsToFlag)
+                'productos_con_alertas' => count($productsToFlag),
+                // 'listado_de_productos_con_alertas' => $productsToFlag,
             ]
         ];
     }
@@ -508,39 +513,39 @@ class ProductDetail extends Model
                 ];
             }
 
-            // Criterio 2: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION (sin fecha)
-            if (
-                $existing->estatus_pago === $estatusPago &&
-                $existing->evaluacion === $evaluacion &&
-                empty($fechaEvaluacion)
-            ) {
-                return [
-                    'is_duplicate' => true,
-                    'reason' => 'Registro similar encontrado (ICCID, Estatus Pago, Evaluación)',
-                    'existing_record' => [
-                        'id' => $existing->id,
-                        'created_at' => $existing->created_at,
-                        'estatus_pago' => $existing->estatus_pago,
-                        'evaluacion' => $existing->evaluacion
-                    ]
-                ];
-            }
+            // // Criterio 2: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION (sin fecha)
+            // if (
+            //     $existing->estatus_pago === $estatusPago &&
+            //     $existing->evaluacion === $evaluacion &&
+            //     empty($fechaEvaluacion)
+            // ) {
+            //     return [
+            //         'is_duplicate' => true,
+            //         'reason' => 'Registro similar encontrado (ICCID, Estatus Pago, Evaluación)',
+            //         'existing_record' => [
+            //             'id' => $existing->id,
+            //             'created_at' => $existing->created_at,
+            //             'estatus_pago' => $existing->estatus_pago,
+            //             'evaluacion' => $existing->evaluacion
+            //         ]
+            //     ];
+            // }
 
-            // Criterio 3: Mismo ICCID + Mismo ESTATUS_PAGO en las últimas 24 horas
-            if (
-                $existing->estatus_pago === $estatusPago &&
-                $existing->created_at->gt(now()->subHours(24))
-            ) {
-                return [
-                    'is_duplicate' => true,
-                    'reason' => 'Mismo estatus de pago registrado en las últimas 24 horas',
-                    'existing_record' => [
-                        'id' => $existing->id,
-                        'created_at' => $existing->created_at,
-                        'estatus_pago' => $existing->estatus_pago
-                    ]
-                ];
-            }
+            // // Criterio 3: Mismo ICCID + Mismo ESTATUS_PAGO en las últimas 24 horas
+            // if (
+            //     $existing->estatus_pago === $estatusPago &&
+            //     $existing->created_at->gt(now()->subHours(24))
+            // ) {
+            //     return [
+            //         'is_duplicate' => true,
+            //         'reason' => 'Mismo estatus de pago registrado en las últimas 24 horas',
+            //         'existing_record' => [
+            //             'id' => $existing->id,
+            //             'created_at' => $existing->created_at,
+            //             'estatus_pago' => $existing->estatus_pago
+            //         ]
+            //     ];
+            // }
         }
 
         return ['is_duplicate' => false];
@@ -564,6 +569,20 @@ class ProductDetail extends Model
                 'updated_at' => now()
             ]);
 
+            $lastMovement = ProductMovement::where('product_id', $product->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Registrar el movimiento
+            ProductMovementService::log(
+                $product->id,
+                'Alerta de evaluaciones',
+                "El producto cuenta con $rechazadasConsecutivas evaluaciones RECHAZADAS seguidas - $warningLevel - en detalle de línea - ICCID: {$product->iccid}",
+                $lastMovement->origin,
+                $lastMovement->destination,
+                auth()->id()
+            );
+
             // // Opcional: Log del cambio
             // Log::info("Producto marcado con advertencia", [
             //     'product_id' => $product->id,
@@ -573,126 +592,6 @@ class ProductDetail extends Model
             // ]);
         }
     }
-
-    /**
-     * Parsear fecha desde diferentes formatos
-     */
-    // private static function parseDate($dateString)
-    // {
-    //     if (empty($dateString)) {
-    //         return null;
-    //     }
-
-    //     try {
-    //         // Formato dd/mm/yyyy
-    //         if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $dateString)) {
-    //             return \Carbon\Carbon::createFromFormat('d/m/Y', $dateString)->format('Y-m-d');
-    //         }
-
-    //         // Formato yyyy-mm-dd
-    //         if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', $dateString)) {
-    //             return $dateString;
-    //         }
-
-    //         // Otros formatos
-    //         return \Carbon\Carbon::parse($dateString)->format('Y-m-d');
-    //     } catch (\Exception $e) {
-    //         Log::warning("No se pudo parsear fecha: {$dateString}");
-    //         return null;
-    //     }
-    // }
-
-    // public static function processBulkData(array $details, $importId)
-    // {
-    //     $processed = [];
-    //     $errors = [];
-    //     $productsToUpdate = [];
-
-    //     foreach ($details as $index => $detail) {
-    //         try {
-    //             $iccid = trim($detail['ICCID']);
-    //             $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
-
-    //             // Validar datos requeridos
-    //             if (empty($iccid)) {
-    //                 $errors[] = "Registro {$index}: ICCID es requerido";
-    //                 continue;
-    //             }
-
-    //             // Buscar producto relacionado si existe product_id
-    //             $product = null;
-    //             $productId = null;
-    //             if (!empty($detail['product_id'])) {
-    //                 $product = Product::find($detail['product_id']);
-    //                 // Log::info("Product->" . json_encode($product));
-    //                 if ($product) {
-    //                     // $errors[] = "Registro {$index}: Producto no encontrado";
-    //                     // continue;
-    //                     $productId = $product->id;
-    //                 }
-    //             } elseif (!empty($iccid)) {
-    //                 $product = Product::where('iccid', $iccid)->first();
-    //                 if (!$product) {
-    //                     $errors[] = "Registro {$index}: Producto no encontrado";
-    //                     continue;
-    //                 }
-    //                 $productId = $product->id;
-    //             }
-
-    //             // Verificar si debemos actualizar el producto
-    //             if ($estatusPago === 'PAGADA' && $product->activation_status === 'Pre-activado' &&   !collect($productsToUpdate)->pluck('product.id')->contains($productId)) {
-    //                 $productsToUpdate[] = [
-    //                     'product' => $product,
-    //                     'detail_data' => $detail
-    //                 ];
-    //             }
-
-    //             // Crear el detalle de linea
-    //             $processed[] = [
-    //                 'product_id' => $productId,
-    //                 'filtro' => $detail['FILTRO'] ?? null,
-    //                 'telefono' => $detail['TELEFONO'] ?? null,
-    //                 'imei' => $detail['IMEI'] ?? null,
-    //                 'iccid' => $detail['ICCID'],
-    //                 'estatus_lin' => $detail['ESTATUS_LIN'] ?? null,
-    //                 'movimiento' => $detail['MOVIMIENTO'] ?? null,
-    //                 'fecha_activ' => $detail['FECHA_ACTIV'] ?? null,
-    //                 'fecha_prim_llam' => $detail['FECHA_PRIM_LLAM'] ?? null,
-    //                 'fecha_dol' => $detail['FECHA_DOL'] ?? null,
-    //                 'estatus_pago' => $detail['ESTATUS_PAGO'] ?? null,
-    //                 'motivo_estatus' => $detail['MOTIVO_ESTATUS'] ?? null,
-    //                 'monto_com' => $detail['MONTO_COM'] ?? null,
-    //                 'tipo_comision' => $detail['TIPO_COMISION'] ?? null,
-    //                 'evaluacion' => $detail['EVALUACION'] ?? null,
-    //                 'fza_vta_pago' => $detail['FZA_VTA_PAGO'] ?? null,
-    //                 'fecha_evaluacion' => $detail['FECHA_EVALUACION'] ?? null,
-    //                 'folio_factura' => $detail['FOLIO_FACTURA'] ?? null,
-    //                 'fecha_publicacion' => $detail['FECHA_PUBLICACION'] ?? null,
-
-    //                 'import_id' => $importId,
-    //                 'active' => true,
-    //                 'created_at' => now(),
-    //                 'updated_at' => now(),
-    //             ];
-    //         } catch (\Exception $e) {
-    //             $errors[] = "Registro {$index}: " . $e->getMessage();
-    //         }
-    //     }
-
-    //     // Insertar todos los detalles
-    //     if (empty($errors)) {
-    //         self::insert($processed);
-
-    //         // Actualizar productos después de insertar los detalles
-    //         self::updateProductsFromDetalles($productsToUpdate);
-    //     }
-
-    //     return [
-    //         'processed' => count($processed),
-    //         'errors' => $errors,
-    //         'products_updated' => count($productsToUpdate)
-    //     ];
-    // }
 
     /**
      * Actualizar productos basado en los detalles con estatus PAGADA
@@ -712,12 +611,16 @@ class ProductDetail extends Model
                 'updated_at' => now()
             ]);
 
+            $lastMovement = ProductMovement::where('product_id', $product->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
             // Registrar el movimiento
             ProductMovementService::log(
                 $product->id,
                 'Activación automática',
-                "Producto activado automáticamente por pago confirmado en detalle de linea - ICCID: {$product->iccid}",
-                'Pre-activado',
+                "Producto activado automáticamente por pago confirmado en detalle de línea - ICCID: {$product->iccid}",
+                $lastMovement->origin,
                 'Activado',
                 auth()->id()
             );

@@ -469,6 +469,8 @@ class ProductDetailController extends Controller
                 ->where('product_id', $productId)
                 ->active()
                 ->orderBy('created_at', 'desc')
+                ->orderBy('fecha_evaluacion', 'desc')
+                ->orderBy('evaluacion', 'desc')
                 ->get();
 
             $response->data = ObjResponse::SuccessResponse();
