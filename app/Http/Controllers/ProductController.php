@@ -687,6 +687,7 @@ class ProductController extends Controller
                     'activation_status',
                     'folio'
                 )
+                ->where('location_status', 'Asignado')
                 ->orderBy('celular', 'asc');
 
             if ($request->has('product_type_id')) {

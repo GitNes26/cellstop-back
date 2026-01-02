@@ -23,7 +23,7 @@ class PointOfSaleController extends Controller
         try {
             $auth = Auth::user();
 
-            $list = PointOfSale::orderBy('id', 'desc');
+            $list = PointOfSale::with('seller')->orderBy('id', 'desc');
             if ($auth->role_id > 2) $list = $list->where('active', true);
 
             if ($auth->role_id == 3) {
