@@ -726,8 +726,8 @@ class ProductController extends Controller
                 $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
             }
 
-            // Log::info($list->toSql());
-            // Log::info($list->getBindings());
+            Log::info($list->toSql());
+            Log::info($list->getBindings());
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
@@ -736,7 +736,7 @@ class ProductController extends Controller
             $response->data["result"] = $list;
             $response->data["toast"] = false;
         } catch (\Exception $ex) {
-            $msg = "ProductController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductController ~ selectIndexProductForVisit ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }

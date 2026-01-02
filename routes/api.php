@@ -197,6 +197,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post("/import", [ProductController::class, 'import']);
         Route::post("/getFolios", [ProductController::class, 'getFolios']);
         Route::post("/getAvailableFoliosForLote", [ProductController::class, 'getAvailableFoliosForLote']);
+        Route::post("/selectIndexProductForVisit", [ProductController::class, 'selectIndexProductForVisit']);
 
         // Route::post("/preActivation", [ProductController::class, 'preActivation']);
         Route::get('/{id}/movements', [ProductController::class, 'movements']);
