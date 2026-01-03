@@ -255,6 +255,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/export', [DashboardController::class, 'exportDashboard']);
         Route::get('/ported', [ProductController::class, 'getPortedProducts']);
         Route::get('/ported/report-by-seller', [ProductController::class, 'getPortabilityBySellerReport']);
+
+        Route::post('/by-seller', [DashboardController::class, 'getSellerDashboard']);
     });
 
     // Datos para filtros

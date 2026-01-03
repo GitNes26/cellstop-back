@@ -162,6 +162,53 @@ class DashboardController extends Controller
       return null;
    }
 
+   public function getSellerDashboard(Request $request, Response $response)
+   {
+      $response->data = ObjResponse::DefaultResponse();
+      try {
+         $auth = Auth::user();
+         $filters = $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'seller_id' => 'nullable|array',
+            'seller_id.*' => 'exists:employees,id',
+            'location_status' => 'nullable|in:Stock,Asignado,Distribuido',
+            'activation_status' => 'nullable|in:Virgen,Pre-activado,Activado,Portado,Caducado',
+            'product_type_id' => 'nullable|exists:product_types,id',
+            'search' => 'nullable|string|max:100',
+            'pos_id' => 'nullable|exists:points_of_sale,id',
+         ]);
+
+
+         // Ejecutar todas las consultas en paralelo
+         $results = DB::transaction(function () use ($filters) {
+            return [
+               'stats' => $this->getGeneralStats($filters),
+               // 'ported_products' => $this->getPortedProductsWithDetails($filters),
+               'sellers_performance' => $this->getSellersPerformance($filters),
+               // 'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
+               // 'portability_by_month' => $this->getPortabilityByMonth($filters),
+               'top_sellers' => $this->getTopSellers($filters),
+               // 'status_distribution' => $this->getStatusDistribution($filters),
+               // 'top_products' => $this->getTopProducts($filters),
+               // 'visits_summary' => $this->getVisitsSummary($filters),
+               'ported_products' => $this->getPortedProducts($filters),
+               'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
+            ];
+         });
+
+         $response->data = ObjResponse::SuccessResponse();
+         $response->data["message"] = 'Peticion satisfactoria | stats.';
+         $response->data["result"] = $results;
+      } catch (\Exception $ex) {
+         $msg = "DashboardController ~ getDashboardStats ~ Hubo un error -> " . $ex->getMessage();
+         Log::error($msg);
+         Log::error('Stack Trace: ' . $ex->getTraceAsString());
+         $response->data = ObjResponse::CatchResponse($msg);
+      }
+
+      return response()->json($response, $response->data["status_code"]);
+   }
    private function getSellersPerformance(array $filters)
    {
       return VW_User::select([
