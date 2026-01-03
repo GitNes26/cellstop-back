@@ -725,6 +725,8 @@ class ProductController extends Controller
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
                 $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+            } else if ($request->has('seller_id')) {
+                $list->assignedToSeller($request->seller_id); // Solo mostrar productos asignados a este vendedor
             }
 
             Log::info($list->toSql());
