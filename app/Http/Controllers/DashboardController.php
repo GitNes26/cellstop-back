@@ -306,7 +306,7 @@ class DashboardController extends Controller
                   'total' => $visits->count(),
                   'by_type' => $visits->groupBy('visit_type')->map->count(),
                   'by_month' => $visits->groupBy(function ($visit) {
-                     return date($visit->created_at)->format('Y-m');
+                     return $visit->created_at->format('Y-m');
                   })->map->count(),
                   'recent' => $visits->take(5)->map(function ($visit) {
                      return [
