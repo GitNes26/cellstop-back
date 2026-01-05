@@ -188,12 +188,12 @@ class DashboardController extends Controller
                'sellers_performance' => $this->getSellersPerformance($filters),
                // 'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
                // 'portability_by_month' => $this->getPortabilityByMonth($filters),
-               'top_sellers' => $this->getTopSellers($filters),
+               // 'top_sellers' => $this->getTopSellers($filters),
                // 'status_distribution' => $this->getStatusDistribution($filters),
                // 'top_products' => $this->getTopProducts($filters),
                // 'visits_summary' => $this->getVisitsSummary($filters),
-               'ported_products' => $this->getPortedProducts($filters),
-               'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
+               // 'ported_products' => $this->getPortedProducts($filters),
+               // 'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
             ];
          });
 
@@ -211,6 +211,10 @@ class DashboardController extends Controller
    }
    private function getSellersPerformance(array $filters)
    {
+      $usertAuth = Auth::user();
+      if ($usertAuth->role_id === 3) $filters['seller_id'] = [$usertAuth->id];
+      // Log::info(json_encode($filters, true));
+
       return VW_User::select([
          'id',
          'employee_id',
@@ -227,12 +231,12 @@ class DashboardController extends Controller
          ->when(
             isset($filters['seller_id']) && count($filters['seller_id']) > 0,
             function ($q) use ($filters) {
-               $q->whereIn('employee_id', $filters['seller_id']);
+               $q->whereIn('id', $filters['seller_id']);
             }
          )
          ->get()
          ->map(function ($seller) use ($filters) {
-            $sellerId = $seller->employee_id;
+            $sellerId = $seller->id;
 
             // Productos asignados
             $assignedProducts = $this->getSellerAssignedProducts($sellerId, $filters);
@@ -272,13 +276,13 @@ class DashboardController extends Controller
                      : 0,
 
                   // Desglose por estatus
-                  'by_activation_status' => $assignedProducts
-                     ->groupBy('activation_status')
-                     ->map->count(),
+                  // 'by_activation_status' => $assignedProducts
+                  //    ->groupBy('activation_status')
+                  //    ->map->count(),
 
-                  'by_location_status' => $assignedProducts
-                     ->groupBy('location_status')
-                     ->map->count(),
+                  // 'by_location_status' => $assignedProducts
+                  //    ->groupBy('location_status')
+                  //    ->map->count(),
                ],
 
                // Puntos de venta
@@ -302,7 +306,7 @@ class DashboardController extends Controller
                   'total' => $visits->count(),
                   'by_type' => $visits->groupBy('visit_type')->map->count(),
                   'by_month' => $visits->groupBy(function ($visit) {
-                     return Carbon::parse($visit->created_at)->format('Y-m');
+                     return date($visit->created_at)->format('Y-m');
                   })->map->count(),
                   'recent' => $visits->take(5)->map(function ($visit) {
                      return [
@@ -338,7 +342,7 @@ class DashboardController extends Controller
    }
 
    // Helper functions para estadísticas de vendedor
-   private function getSellerAssignedProducts($sellerId, $filters)
+   private function getSellerActicvedroducts($sellerId, $filters)
    {
       return Product::whereHas('loteDetails.lote', function ($q) use ($sellerId) {
          $q->where('seller_id', $sellerId);
@@ -349,17 +353,35 @@ class DashboardController extends Controller
          ->get();
    }
 
+   private function getSellerAssignedProducts($sellerId, $filters)
+   {
+      $list = Product::whereHas('loteDetails.lote', function ($q) use ($sellerId) {
+         $q->where('seller_id', $sellerId);
+      })
+         ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+            $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
+         });
+
+
+      Log::info($list->toSql());
+      Log::info($list->getBindings());
+      return $list->pluck('id');
+   }
+
    private function getSellerDistributedProducts($sellerId, $filters)
    {
-      return Product::where('location_status', 'Distribuido')
+      $list = Product::where('location_status', 'Distribuido')
          ->whereHas('movements', function ($q) use ($sellerId) {
             $q->where('executed_by', $sellerId)
                ->where('action', 'distribuir');
          })
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
             $q->whereBetween('products.updated_at', [$filters['start_date'], $filters['end_date']]);
-         })
-         ->get();
+         });
+
+      Log::info($list->toSql());
+      Log::info($list->getBindings());
+      return $list->get();
    }
 
    private function getSellerPortedProducts($sellerId, $filters)
@@ -376,14 +398,15 @@ class DashboardController extends Controller
 
    private function getSellerPointsOfSale($sellerId, $filters)
    {
-      return PointOfSale::whereHas('visits', function ($q) use ($sellerId) {
-         $q->where('seller_id', $sellerId);
-      })
-         ->orWhereHas('movements', function ($q) use ($sellerId) {
-            $q->where('executed_by', $sellerId)
-               ->where('action', 'distribuir')
-               ->whereColumn('destination', 'points_of_sale.id');
-         })
+      // return PointOfSale::whereHas('visits', function ($q) use ($sellerId) {
+      //    $q->where('seller_id', $sellerId);
+      // })
+      return PointOfSale::where('active', true)->where('seller_id', $sellerId)
+         // ->orWhereHas('movements', function ($q) use ($sellerId) {
+         //    $q->where('executed_by', $sellerId)
+         //       ->where('action', 'distribuir')
+         //       ->whereColumn('destination', 'points_of_sale.id');
+         // })
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
             $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
          })
