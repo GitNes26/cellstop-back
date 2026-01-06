@@ -239,7 +239,10 @@ class DashboardController extends Controller
             $sellerId = $seller->id;
 
             // Productos asignados
+            // $assignedProductsId = $this->getSellerAssignedProductsId($sellerId, $filters);
+            // Log::info("productosAsignados:" . json_encode($assignedProducts));
             $assignedProducts = $this->getSellerAssignedProducts($sellerId, $filters);
+
 
             // Productos distribuidos
             $distributedProducts = $this->getSellerDistributedProducts($sellerId, $filters);
@@ -342,31 +345,46 @@ class DashboardController extends Controller
    }
 
    // Helper functions para estadísticas de vendedor
-   private function getSellerActicvedroducts($sellerId, $filters)
+   private function getSellerAssignedProductsId($sellerId, $filters)
    {
-      return Product::whereHas('loteDetails.lote', function ($q) use ($sellerId) {
-         $q->where('seller_id', $sellerId);
-      })
-         ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-            $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
-         })
-         ->get();
-   }
-
-   private function getSellerAssignedProducts($sellerId, $filters)
-   {
-      $list = Product::whereHas('loteDetails.lote', function ($q) use ($sellerId) {
-         $q->where('seller_id', $sellerId);
-      })
+      $list = Product::assignedToSeller($sellerId)
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
             $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
          });
 
 
-      Log::info($list->toSql());
-      Log::info($list->getBindings());
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
       return $list->pluck('id');
    }
+   private function getSellerAssignedProducts($sellerId, $filters)
+   {
+      $list = Product::assignedToSeller($sellerId)
+         ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+            $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
+         });
+
+      return $list->get();
+   }
+
+   private function getSellerFiltersProducts($sellerId, $filters)
+   {
+      return Product::assignedToSeller($sellerId)
+         ->where('destination', 'Distribuido')
+         ->whereHas('movements', function ($q) use ($sellerId) {
+            $q->where('executed_by', $sellerId)
+               ->where('action', 'distribuir');
+         })
+         ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+            $q->whereBetween('products.updated_at', [$filters['start_date'], $filters['end_date']]);
+         });
+      // ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+      //    $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
+      // })
+      // ->get();
+   }
+
+
 
    private function getSellerDistributedProducts($sellerId, $filters)
    {
