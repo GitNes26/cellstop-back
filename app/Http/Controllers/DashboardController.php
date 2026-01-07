@@ -201,7 +201,7 @@ class DashboardController extends Controller
          $response->data["message"] = 'Peticion satisfactoria | stats.';
          $response->data["result"] = $results;
       } catch (\Exception $ex) {
-         $msg = "DashboardController ~ getDashboardStats ~ Hubo un error -> " . $ex->getMessage();
+         $msg = "DashboardController ~ getSellerDashboard ~ Hubo un error -> " . $ex->getMessage();
          Log::error($msg);
          Log::error('Stack Trace: ' . $ex->getTraceAsString());
          $response->data = ObjResponse::CatchResponse($msg);
@@ -238,22 +238,38 @@ class DashboardController extends Controller
          ->map(function ($seller) use ($filters) {
             $sellerId = $seller->id;
 
-            // Productos asignados
-            // $assignedProductsId = $this->getSellerAssignedProductsId($sellerId, $filters);
-            // Log::info("productosAsignados:" . json_encode($assignedProducts));
-            $assignedProducts = $this->getSellerAssignedProducts($sellerId, $filters);
+            // Id Productos asignados
+            $assignedProductsId = $this->getSellerAssignedProductsId($sellerId, $filters);
+            $filters["productIds"] = $assignedProductsId;
 
+            $assignedProducts = $this->getSellerFiltersProducts($sellerId, $filters);
 
-            // Productos distribuidos
-            $distributedProducts = $this->getSellerDistributedProducts($sellerId, $filters);
+            // Filtrar el collection de movimientos por la propiedad `destination`
+            $stockAssignedProducts = $assignedProducts->filter(function ($item) {
+               $dest = strtolower($item->destination ?? '');
+               return in_array($dest, ['stock', 'asignado', 'asignados']);
+            });
 
-            // Productos portados
-            $portedProducts = $this->getSellerPortedProducts($sellerId, $filters);
+            $distributedProducts = $assignedProducts->filter(function ($item) {
+               $dest = strtolower($item->destination ?? '');
+               return in_array($dest, ['distribuido', 'distribuidos']);
+            });
+
+            $activeProducts = $assignedProducts->filter(function ($item) {
+               $dest = strtolower($item->destination ?? '');
+               return in_array($dest, ['activo', 'active']);
+            });
+
+            $portedProducts = $assignedProducts->filter(function ($item) {
+               $dest = strtolower($item->destination ?? '');
+               return $dest === 'portado';
+            });
 
             // Puntos de venta asignados
             $assignedPOS = $this->getSellerPointsOfSale($sellerId, $filters);
 
             // Visitas realizadas
+            $dailyVisits = $this->getSellerVisits($sellerId, $filters, true);
             $visits = $this->getSellerVisits($sellerId, $filters);
 
             return [
@@ -271,10 +287,25 @@ class DashboardController extends Controller
 
                // Estadísticas de productos
                'products_stats' => [
-                  'total_assigned' => $assignedProducts->count(),
+                  'assigned' => $assignedProducts->count(),
+                  'in_stock' => $stockAssignedProducts->count(),
                   'distributed' => $distributedProducts->count(),
-                  'total_ported' => $portedProducts->count(),
-                  'portability_rate' => $assignedProducts->count() > 0
+                  'actived' => $activeProducts->count(),
+                  'ported' => $portedProducts->count(),
+
+                  'assigned_rate' => $assignedProducts->count() > 0
+                     ? round(($assignedProducts->count() / $assignedProducts->count()) * 100, 2)
+                     : 0,
+                  'in_stock_rate' => $assignedProducts->count() > 0
+                     ? round(($stockAssignedProducts->count() / $assignedProducts->count()) * 100, 2)
+                     : 0,
+                  'distributed_rate' => $assignedProducts->count() > 0
+                     ? round(($distributedProducts->count() / $assignedProducts->count()) * 100, 2)
+                     : 0,
+                  'actived_rate' => $assignedProducts->count() > 0
+                     ? round(($activeProducts->count() / $assignedProducts->count()) * 100, 2)
+                     : 0,
+                  'ported_rate' => $assignedProducts->count() > 0
                      ? round(($portedProducts->count() / $assignedProducts->count()) * 100, 2)
                      : 0,
 
@@ -306,6 +337,10 @@ class DashboardController extends Controller
 
                // Visitas
                'visits' => [
+                  'daily' => $dailyVisits->count(),
+                  'daily_rate' => $assignedPOS->count() > 0
+                     ? round(($dailyVisits->count() / $assignedPOS->count()) * 100, 2)
+                     : 0,
                   'total' => $visits->count(),
                   'by_type' => $visits->groupBy('visit_type')->map->count(),
                   'by_month' => $visits->groupBy(function ($visit) {
@@ -369,19 +404,45 @@ class DashboardController extends Controller
 
    private function getSellerFiltersProducts($sellerId, $filters)
    {
-      return Product::assignedToSeller($sellerId)
-         ->where('destination', 'Distribuido')
-         ->whereHas('movements', function ($q) use ($sellerId) {
-            $q->where('executed_by', $sellerId)
-               ->where('action', 'distribuir');
+
+      // CONSULTA DIRECTA A MOVIMIENTOS DE PRODUCTOS -> Obtener sólo el último movimiento por product_id
+      $subQuery = ProductMovement::selectRaw('product_id, MAX(executed_at) as max_executed_at')
+         ->whereIn('product_id', $filters['productIds'])
+         ->when(isset($filters['destination']), function ($q) use ($filters) {
+            $q->where('destination', $filters['destination']);
          })
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-            $q->whereBetween('products.updated_at', [$filters['start_date'], $filters['end_date']]);
-         });
-      // ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-      //    $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
-      // })
-      // ->get();
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
+         })
+         ->groupBy('product_id');
+
+      $list = DB::table('product_movements as pm')
+         ->joinSub($subQuery, 'latest', function ($join) {
+            $join->on('pm.product_id', '=', 'latest.product_id')
+               ->on('pm.executed_at', '=', 'latest.max_executed_at');
+         })
+         ->select('pm.*')
+         ->orderBy('pm.executed_at', 'asc')
+         ->orderBy('pm.product_id', 'asc');
+
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
+      return $list->get();
+
+      // CONSULTA DESDE PRODUCTOS, ligandolos por lotes y movimientos
+      // $list = Product::assignedToSeller($sellerId)
+      //    ->whereHas('movements', function ($q) use ($filters) {
+      //       $q->whereIn('product_id', $filters["productIds"])
+      //          ->when(isset($filters['destination']), function ($q1) use ($filters) {
+      //             $q1->where('destination', $filters['destination']);
+      //          })
+      //          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q2) use ($filters) {
+      //             $q2->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
+      //          });
+      //    });
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
+      // return $list->get();
    }
 
 
@@ -397,8 +458,8 @@ class DashboardController extends Controller
             $q->whereBetween('products.updated_at', [$filters['start_date'], $filters['end_date']]);
          });
 
-      Log::info($list->toSql());
-      Log::info($list->getBindings());
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
       return $list->get();
    }
 
@@ -431,15 +492,21 @@ class DashboardController extends Controller
          ->get();
    }
 
-   private function getSellerVisits($sellerId, $filters)
+   private function getSellerVisits($sellerId, $filters, $daily = false)
    {
-      return Visit::where('seller_id', $sellerId)
+      $list = Visit::where('seller_id', $sellerId)
          ->with('point_of_sale')
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
             $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-         })
-         ->orderBy('created_at', 'desc')
-         ->get();
+         });
+
+      if ($daily) {
+         $list->whereDate('created_at', now()->toDateString());
+      }
+
+      Log::info($list->toSql());
+      Log::info($list->getBindings());
+      return $list->orderBy('created_at', 'desc')->get();
    }
 
    private function getPointsOfSaleWithInventory(array $filters)
