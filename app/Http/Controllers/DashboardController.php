@@ -392,22 +392,25 @@ class DashboardController extends Controller
       // Log::info($list->getBindings());
       return $list->pluck('id');
    }
-   private function getSellerAssignedProducts($sellerId, $filters)
-   {
-      $list = Product::assignedToSeller($sellerId)
-         ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-            $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
-         });
+   // private function getSellerAssignedProducts($sellerId, $filters)
+   // {
+   //    $list = Product::assignedToSeller($sellerId)
+   //       ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+   //          $q->whereBetween('products.created_at', [$filters['start_date'], $filters['end_date']]);
+   //       });
 
-      return $list->get();
-   }
+   //    return $list->get();
+   // }
 
    private function getSellerFiltersProducts($sellerId, $filters)
    {
 
       // CONSULTA DIRECTA A MOVIMIENTOS DE PRODUCTOS -> Obtener sólo el último movimiento por product_id
       $subQuery = ProductMovement::selectRaw('product_id, MAX(executed_at) as max_executed_at')
-         ->whereIn('product_id', $filters['productIds'])
+         ->when(isset($filters['productIds']), function ($q) use ($filters) {
+            $q->whereIn('product_id', $filters['productIds']);
+         })
+
          ->when(isset($filters['destination']), function ($q) use ($filters) {
             $q->where('destination', $filters['destination']);
          })
@@ -416,17 +419,66 @@ class DashboardController extends Controller
          })
          ->groupBy('product_id');
 
+      // $list = DB::table('product_movements as pm')
+      //    ->joinSub($subQuery, 'latest', function ($join) {
+      //       $join->on('pm.product_id', '=', 'latest.product_id')
+      //          ->on('pm.executed_at', '=', 'latest.max_executed_at');
+      //    })
+      //    ->select('pm.*')
+      //    ->orderBy('pm.executed_at', 'asc')
+      //    ->orderBy('pm.product_id', 'asc');
+
       $list = DB::table('product_movements as pm')
          ->joinSub($subQuery, 'latest', function ($join) {
             $join->on('pm.product_id', '=', 'latest.product_id')
                ->on('pm.executed_at', '=', 'latest.max_executed_at');
          })
-         ->select('pm.*')
+         ->join('products as p', 'p.id', '=', 'pm.product_id')
+         ->leftJoin('lote_details as ld', 'ld.product_id', '=', 'p.id')
+         ->leftJoin('lotes as l', 'l.id', '=', 'ld.lote_id')
+         ->leftJoin('vw_users as s', 's.id', '=', 'l.seller_id')
+         ->when(isset($sellerId), function ($q) use ($sellerId) {
+            $q->where('l.seller_id', $sellerId);
+         })
+         ->select([
+            'pm.*',
+
+            // producto
+            'p.iccid',
+            'p.imei',
+            'p.celular',
+            'p.folio',
+            'p.location_status',
+            'p.activation_status',
+            'p.product_type_id',
+            'l.lote',
+            'l.lada',
+            'l.seller_id',
+            's.username',
+            's.full_name',
+         ])
          ->orderBy('pm.executed_at', 'asc')
          ->orderBy('pm.product_id', 'asc');
 
-      // Log::info($list->toSql());
-      // Log::info($list->getBindings());
+      /*
+      |--------------------------------------------------------------------------
+      | Filtro OPCIONAL por vendedor
+      |--------------------------------------------------------------------------
+      | Si NO viene seller_id → salen TODOS
+      | Si viene seller_id → solo los asignados a ese vendedor
+      */
+      // if (!empty($seller_id)) {
+      // $list->whereExists(function ($q) use ($seller_id) {
+      //    $q->select(DB::raw(1))
+      //       ->from('lote_details as ld')
+      //       ->join('lotes as l', 'l.id', '=', 'ld.lote_id')
+      //       ->whereColumn('ld.product_id', 'pm.product_id')
+      //       ->where('l.seller_id', $seller_id);
+      // });
+      // }
+
+      Log::info($list->toSql());
+      Log::info($list->getBindings());
       return $list->get();
 
       // CONSULTA DESDE PRODUCTOS, ligandolos por lotes y movimientos
@@ -504,8 +556,8 @@ class DashboardController extends Controller
          $list->whereDate('created_at', now()->toDateString());
       }
 
-      Log::info($list->toSql());
-      Log::info($list->getBindings());
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
       return $list->orderBy('created_at', 'desc')->get();
    }
 
@@ -672,6 +724,7 @@ class DashboardController extends Controller
    private function getGeneralStats(array $filters)
    {
       $query = Product::query();
+      Log::info("DashboardController ~ getGeneralStats ~ query:" . $query->toSql());
 
       // Aplicar filtros
       $this->applyFilters($query, $filters);

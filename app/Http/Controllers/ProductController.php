@@ -729,8 +729,8 @@ class ProductController extends Controller
                 $list->assignedToSeller($request->seller_id); // Solo mostrar productos asignados a este vendedor
             }
 
-            Log::info($list->toSql());
-            Log::info($list->getBindings());
+            // Log::info($list->toSql());
+            // Log::info($list->getBindings());
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();

@@ -45,8 +45,8 @@ class LoteController extends Controller
                 $list = $list->where('active', true);
             }
 
-            Log::info('LoteController ~ index ~ SQL: ' . $list->toSql());
-            Log::info('LoteController ~ index ~ Bindings: ' . implode(', ', $list->getBindings()));
+            // Log::info('LoteController ~ index ~ SQL: ' . $list->toSql());
+            // Log::info('LoteController ~ index ~ Bindings: ' . implode(', ', $list->getBindings()));
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();

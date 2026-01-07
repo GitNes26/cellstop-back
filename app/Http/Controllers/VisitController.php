@@ -83,16 +83,16 @@ class VisitController extends Controller
         try {
             // Validaciones básicas
             $validator = $this->validateAvailableData($request, 'visits', [
-                [
-                    'field' => 'contact_phone',
-                    'label' => 'Teléfono de contacto',
-                    'rules' => ['nullable', 'string', 'max:10', 'min:10'],
-                    'messages' => [
-                        'string' => 'El número celular debe ser texto.',
-                        'max' => 'El número celular no puede tener más de 10 caracteres.',
-                        'min' => 'El número celular debe tener al menos 10 caracteres.',
-                    ]
-                ],
+                // [
+                //     'field' => 'contact_phone',
+                //     'label' => 'Teléfono de contacto',
+                //     'rules' => ['nullable', 'string', 'max:10', 'min:10'],
+                //     'messages' => [
+                //         'string' => 'El número celular debe ser texto.',
+                //         'max' => 'El número celular no puede tener más de 10 caracteres.',
+                //         'min' => 'El número celular debe tener al menos 10 caracteres.',
+                //     ]
+                // ],
                 [
                     'field' => 'visit_type',
                     'label' => 'Tipo de visita',

@@ -24,6 +24,8 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['product_id', 'executed_at']);
         });
     }
 
