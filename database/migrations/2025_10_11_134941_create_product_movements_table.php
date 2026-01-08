@@ -26,6 +26,8 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['product_id', 'executed_at']);
+            $table->index('executed_at');
+            $table->index('destination');
         });
     }
 

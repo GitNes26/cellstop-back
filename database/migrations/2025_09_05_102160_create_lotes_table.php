@@ -40,6 +40,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index('seller_id');
+            $table->index(['id', 'seller_id']);
         });
     }
 

@@ -28,7 +28,7 @@ class DashboardController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'seller_id' => 'nullable|array',
-            'seller_id.*' => 'exists:employees,id',
+            // 'seller_id.*' => 'exists:employees,id',
             'location_status' => 'nullable|in:Stock,Asignado,Distribuido',
             'activation_status' => 'nullable|in:Virgen,Pre-activado,Activado,Portado,Caducado',
             'product_type_id' => 'nullable|exists:product_types,id',
@@ -36,20 +36,20 @@ class DashboardController extends Controller
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
-
+         Log::info("filtros" . json_encode($filters, true));
          // Ejecutar todas las consultas en paralelo
          $results = DB::transaction(function () use ($filters) {
             return [
                'stats' => $this->getGeneralStats($filters),
                'ported_products' => $this->getPortedProductsWithDetails($filters),
                // 'sellers_performance' => $this->getSellersPerformance($filters),
-               // 'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
+               'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
                // 'portability_by_month' => $this->getPortabilityByMonth($filters),
                'top_sellers' => $this->getTopSellers($filters),
                // 'status_distribution' => $this->getStatusDistribution($filters),
                // 'top_products' => $this->getTopProducts($filters),
                // 'visits_summary' => $this->getVisitsSummary($filters),
-               'ported_products' => $this->getPortedProducts($filters),
+               // 'ported_products' => $this->getPortedProducts($filters),
                'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
             ];
          });
@@ -460,23 +460,6 @@ class DashboardController extends Controller
          ->orderBy('pm.executed_at', 'asc')
          ->orderBy('pm.product_id', 'asc');
 
-      /*
-      |--------------------------------------------------------------------------
-      | Filtro OPCIONAL por vendedor
-      |--------------------------------------------------------------------------
-      | Si NO viene seller_id → salen TODOS
-      | Si viene seller_id → solo los asignados a ese vendedor
-      */
-      // if (!empty($seller_id)) {
-      // $list->whereExists(function ($q) use ($seller_id) {
-      //    $q->select(DB::raw(1))
-      //       ->from('lote_details as ld')
-      //       ->join('lotes as l', 'l.id', '=', 'ld.lote_id')
-      //       ->whereColumn('ld.product_id', 'pm.product_id')
-      //       ->where('l.seller_id', $seller_id);
-      // });
-      // }
-
       Log::info($list->toSql());
       Log::info($list->getBindings());
       return $list->get();
@@ -563,129 +546,264 @@ class DashboardController extends Controller
 
    private function getPointsOfSaleWithInventory(array $filters)
    {
-      return PointOfSale::with([
-         'products' => function ($q) use ($filters) {
-            $q->when(isset($filters['activation_status']), function ($q) use ($filters) {
-               $q->where('activation_status', $filters['activation_status']);
-            })
-               ->when(isset($filters['location_status']), function ($q) use ($filters) {
-                  $q->where('location_status', $filters['location_status']);
-               });
-         },
+      $pointsOfSale = PointOfSale::with([
+         // 'products' => function ($q) use ($filters) {
+         //    $q->when($filters['activation_status'] ?? null, function ($q, $status) {
+         //       $q->where('activation_status', $status);
+         //    })
+         //       ->when($filters['location_status'] ?? null, function ($q, $status) {
+         //          $q->where('location_status', $status);
+         //       });
+         // },
+
          'visits' => function ($q) use ($filters) {
-            $q->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-               $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-            })
-               ->with('seller.personalInfo');
+            $q->when(
+               isset($filters['start_date'], $filters['end_date']),
+               fn($q) => $q->whereBetween('created_at', [
+                  $filters['start_date'],
+                  $filters['end_date'],
+               ])
+            )->with([
+               'seller:id,pin_color',
+               // 'seller.personalInfo:id,employee_id,full_name,cellphone',
+            ]);
          },
-         'latestVisit.seller.personalInfo',
+
+         // 'latestVisit' => function ($q) {
+         //    $q->with([
+         //       'seller:id,pin_color',
+         //       // 'seller.personalInfo:id,employee_id,full_name,cellphone',
+         //    ]);
+         // },
       ])
-         ->when(isset($filters['pos_id']), function ($q) use ($filters) {
-            $q->where('id', $filters['pos_id']);
-         })
+         ->when($filters['pos_id'] ?? null, fn($q, $posId) => $q->where('id', $posId))
+         ->get();
+
+      Log::info("pointsOfSale" . $pointsOfSale);
+
+      $lastDistributions = ProductMovement::select('destination', 'executed_at', 'executed_by', 'description')
+         ->where('destination', 'Distribuido')
+         // ->whereIn('destination', $pointsOfSale->pluck('id'))
+         ->latest('executed_at')
+         ->get();
+         // ->groupBy('destination');
+
+      Log::info("lastDistributions" . $lastDistributions);
+
+
+      $topSellers = Visit::select('pos_id', 'seller_id', DB::raw('COUNT(*) as visit_count'))
+         ->whereIn('pos_id', $pointsOfSale->pluck('id'))
+         ->groupBy('pos_id', 'seller_id')
          ->get()
-         ->map(function ($pos) use ($filters) {
-            $latestVisit = $pos->latestVisit;
-            $seller = $latestVisit?->seller;
-            $personalInfo = $seller?->personalInfo;
+         ->groupBy('pos_id')
+         ->map(fn($visits) => $visits->sortByDesc('visit_count')->first());
 
-            // Productos en este POS
-            $products = $pos->products;
 
-            // Última distribución
-            $lastDistribution = ProductMovement::where('destination', $pos->id)
-               ->where('action', 'distribuir')
-               ->latest()
-               ->first();
+      $sellerInfo = VW_User::whereIn(
+         'employee_id',
+         $topSellers->pluck('seller_id')->filter()
+      )->get()->keyBy('employee_id');
 
-            // Vendedor que más ha visitado
-            $topSeller = Visit::where('pos_id', $pos->id)
-               ->select('seller_id', DB::raw('COUNT(*) as visit_count'))
-               ->groupBy('seller_id')
-               ->orderByDesc('visit_count')
-               ->first();
 
-            $topSellerInfo = $topSeller ? VW_User::where('employee_id', $topSeller->seller_id)->first() : null;
+      return $pointsOfSale->map(function ($pos) use ($lastDistributions, $topSellers, $sellerInfo) {
 
-            return [
-               'id' => $pos->id,
-               'name' => $pos->name,
-               'contact_name' => $pos->contact_name,
-               'contact_phone' => $pos->contact_phone,
-               'address' => $pos->address,
-               'lat' => (float) $pos->lat,
-               'lon' => (float) $pos->lon,
-               'ubication' => $pos->ubication,
+         // $latestVisit = $pos->latestVisit;
+         // $seller = $latestVisit?->seller;
+         // $personalInfo = $seller?->personalInfo;
 
-               // Inventario
-               'inventory' => [
-                  'products' => $products->count(),
-                  'by_activation_status' => $products->groupBy('activation_status')->map->count(),
-                  'by_location_status' => $products->groupBy('location_status')->map->count(),
-                  'ported_count' => $products->where('activation_status', 'Portado')->count(),
-                  'activated_count' => $products->where('activation_status', 'Activado')->count(),
+         // $products = $pos->products;
 
-                  // Detalle de productos portados
-                  'ported_products' => $products->where('activation_status', 'Portado')
-                     ->take(5)
-                     ->map(function ($product) {
-                        return [
-                           'celular' => $product->celular,
-                           'iccid' => $product->iccid,
-                           'ported_date' => $product->updated_at,
-                        ];
-                     }),
-               ],
+         $lastDistribution = $lastDistributions[$pos->id]?->first();
 
-               // Visitas
-               'visits' => [
-                  'total' => $pos->visits->count(),
-                  'by_type' => $pos->visits->groupBy('visit_type')->map->count(),
-                  'last_visit' => $latestVisit ? [
-                     'date' => $latestVisit->created_at,
-                     'type' => $latestVisit->visit_type,
-                     'seller_name' => $personalInfo?->full_name,
-                     'seller_pin_color' => $seller?->pin_color,
-                     'chips_delivered' => $latestVisit->chips_delivered,
-                     'chips_sold' => $latestVisit->chips_sold,
-                     'observations' => $latestVisit->observations,
-                  ] : null,
+         $topSeller = $topSellers[$pos->id] ?? null;
+         $topSellerInfo = $topSeller
+            ? $sellerInfo[$topSeller->seller_id] ?? null
+            : null;
 
-                  'top_seller' => $topSellerInfo ? [
-                     'name' => $topSellerInfo->full_name,
-                     'pin_color' => $topSellerInfo->pin_color,
-                     'visit_count' => $topSeller->visit_count,
-                  ] : null,
-               ],
+         return [
+            'id' => $pos->id,
+            'name' => $pos->name,
+            'contact_name' => $pos->contact_name,
+            'contact_phone' => $pos->contact_phone,
+            'address' => $pos->address,
+            'lat' => (float) $pos->lat,
+            'lon' => (float) $pos->lon,
+            'ubication' => $pos->ubication,
 
-               // Última distribución
-               'last_distribution' => $lastDistribution ? [
-                  'date' => $lastDistribution->executed_at,
-                  'executed_by' => $lastDistribution->executed_by,
-                  'quantity' => $lastDistribution->description ?
-                     intval(preg_replace('/[^0-9]/', '', $lastDistribution->description)) : 0,
+            'inventory' => [
+               // 'products' => $products->count(),
+               // 'by_activation_status' => $products->groupBy('activation_status')->map->count(),
+               // 'by_location_status' => $products->groupBy('location_status')->map->count(),
+               // 'ported_count' => $products->where('activation_status', 'Portado')->count(),
+               // 'activated_count' => $products->where('activation_status', 'Activado')->count(),
+            ],
+
+            'visits' => [
+               'total' => $pos->visits->count(),
+               'by_type' => $pos->visits->groupBy('visit_type')->map->count(),
+
+               // 'last_visit' => $latestVisit ? [
+               //    'date' => $latestVisit->created_at,
+               //    'type' => $latestVisit->visit_type,
+               //    // 'seller_name' => $personalInfo?->full_name,
+               //    'seller_pin_color' => $seller?->pin_color,
+               //    'chips_delivered' => $latestVisit->chips_delivered,
+               //    'chips_sold' => $latestVisit->chips_sold,
+               //    'observations' => $latestVisit->observations,
+               // ] : null,
+
+               'top_seller' => $topSellerInfo ? [
+                  'name' => $topSellerInfo->full_name,
+                  'pin_color' => $topSellerInfo->pin_color,
+                  'visit_count' => $topSeller->visit_count,
                ] : null,
+            ],
 
-               // Vendedor principal (basado en últimas visitas)
-               'primary_seller' => $seller ? [
-                  'id' => $seller->id,
-                  'name' => $personalInfo?->full_name,
-                  'pin_color' => $seller->pin_color,
-                  'cellphone' => $personalInfo?->cellphone,
-               ] : null,
+            'last_distribution' => $lastDistribution ? [
+               'date' => $lastDistribution->executed_at,
+               'executed_by' => $lastDistribution->executed_by,
+               'quantity' => $lastDistribution->description
+                  ? (int) preg_replace('/\D/', '', $lastDistribution->description)
+                  : 0,
+            ] : null,
 
-               // Estadísticas de ventas
-               'sales_stats' => [
-                  'total_chips_delivered' => $pos->visits->sum('chips_delivered'),
-                  'total_chips_sold' => $pos->visits->sum('chips_sold'),
-                  'total_chips_remaining' => $pos->visits->sum('chips_remaining'),
-                  'conversion_rate' => $pos->visits->sum('chips_delivered') > 0
-                     ? round(($pos->visits->sum('chips_sold') / $pos->visits->sum('chips_delivered')) * 100, 2)
-                     : 0,
-               ],
-            ];
-         });
+            // 'primary_seller' => $seller ? [
+            //    'id' => $seller->id,
+            //    // 'name' => $personalInfo?->full_name,
+            //    'pin_color' => $seller->pin_color,
+            //    // 'cellphone' => $personalInfo?->cellphone,
+            // ] : null,
+         ];
+      });
    }
+
+
+
+   // private function getPointsOfSaleWithInventory(array $filters)
+   // {
+   //    return PointOfSale::with([
+   //       'products' => function ($q) use ($filters) {
+   //          $q->when(isset($filters['activation_status']), function ($q) use ($filters) {
+   //             $q->where('activation_status', $filters['activation_status']);
+   //          })
+   //             ->when(isset($filters['location_status']), function ($q) use ($filters) {
+   //                $q->where('location_status', $filters['location_status']);
+   //             });
+   //       },
+   //       'visits' => function ($q) use ($filters) {
+   //          $q->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
+   //             $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+   //          })
+   //             ->with('seller.personalInfo');
+   //       },
+   //       'latestVisit.seller.personalInfo',
+   //    ])
+   //       ->when(isset($filters['pos_id']), function ($q) use ($filters) {
+   //          $q->where('id', $filters['pos_id']);
+   //       })
+   //       ->get()
+   //       ->map(function ($pos) use ($filters) {
+   //          $latestVisit = $pos->latestVisit;
+   //          $seller = $latestVisit?->seller;
+   //          $personalInfo = $seller?->personalInfo;
+
+   //          // Productos en este POS
+   //          $products = $pos->products;
+
+   //          // Última distribución
+   //          $lastDistribution = ProductMovement::where('destination', $pos->id)
+   //             ->where('action', 'distribuir')
+   //             ->latest()
+   //             ->first();
+
+   //          // Vendedor que más ha visitado
+   //          $topSeller = Visit::where('pos_id', $pos->id)
+   //             ->select('seller_id', DB::raw('COUNT(*) as visit_count'))
+   //             ->groupBy('seller_id')
+   //             ->orderByDesc('visit_count')
+   //             ->first();
+
+   //          $topSellerInfo = $topSeller ? VW_User::where('employee_id', $topSeller->seller_id)->first() : null;
+
+   //          return [
+   //             'id' => $pos->id,
+   //             'name' => $pos->name,
+   //             'contact_name' => $pos->contact_name,
+   //             'contact_phone' => $pos->contact_phone,
+   //             'address' => $pos->address,
+   //             'lat' => (float) $pos->lat,
+   //             'lon' => (float) $pos->lon,
+   //             'ubication' => $pos->ubication,
+
+   //             // Inventario
+   //             'inventory' => [
+   //                'products' => $products->count(),
+   //                'by_activation_status' => $products->groupBy('activation_status')->map->count(),
+   //                'by_location_status' => $products->groupBy('location_status')->map->count(),
+   //                'ported_count' => $products->where('activation_status', 'Portado')->count(),
+   //                'activated_count' => $products->where('activation_status', 'Activado')->count(),
+
+   //                // Detalle de productos portados
+   //                'ported_products' => $products->where('activation_status', 'Portado')
+   //                   ->take(5)
+   //                   ->map(function ($product) {
+   //                      return [
+   //                         'celular' => $product->celular,
+   //                         'iccid' => $product->iccid,
+   //                         'ported_date' => $product->updated_at,
+   //                      ];
+   //                   }),
+   //             ],
+
+   //             // Visitas
+   //             'visits' => [
+   //                'total' => $pos->visits->count(),
+   //                'by_type' => $pos->visits->groupBy('visit_type')->map->count(),
+   //                'last_visit' => $latestVisit ? [
+   //                   'date' => $latestVisit->created_at,
+   //                   'type' => $latestVisit->visit_type,
+   //                   'seller_name' => $personalInfo?->full_name,
+   //                   'seller_pin_color' => $seller?->pin_color,
+   //                   'chips_delivered' => $latestVisit->chips_delivered,
+   //                   'chips_sold' => $latestVisit->chips_sold,
+   //                   'observations' => $latestVisit->observations,
+   //                ] : null,
+
+   //                'top_seller' => $topSellerInfo ? [
+   //                   'name' => $topSellerInfo->full_name,
+   //                   'pin_color' => $topSellerInfo->pin_color,
+   //                   'visit_count' => $topSeller->visit_count,
+   //                ] : null,
+   //             ],
+
+   //             // Última distribución
+   //             'last_distribution' => $lastDistribution ? [
+   //                'date' => $lastDistribution->executed_at,
+   //                'executed_by' => $lastDistribution->executed_by,
+   //                'quantity' => $lastDistribution->description ?
+   //                   intval(preg_replace('/[^0-9]/', '', $lastDistribution->description)) : 0,
+   //             ] : null,
+
+   //             // Vendedor principal (basado en últimas visitas)
+   //             'primary_seller' => $seller ? [
+   //                'id' => $seller->id,
+   //                'name' => $personalInfo?->full_name,
+   //                'pin_color' => $seller->pin_color,
+   //                'cellphone' => $personalInfo?->cellphone,
+   //             ] : null,
+
+   //             // Estadísticas de ventas
+   //             'sales_stats' => [
+   //                'total_chips_delivered' => $pos->visits->sum('chips_delivered'),
+   //                'total_chips_sold' => $pos->visits->sum('chips_sold'),
+   //                'total_chips_remaining' => $pos->visits->sum('chips_remaining'),
+   //                'conversion_rate' => $pos->visits->sum('chips_delivered') > 0
+   //                   ? round(($pos->visits->sum('chips_sold') / $pos->visits->sum('chips_delivered')) * 100, 2)
+   //                   : 0,
+   //             ],
+   //          ];
+   //       });
+   // }
 
    private function getVisitsSummary(array $filters)
    {
@@ -723,23 +841,34 @@ class DashboardController extends Controller
 
    private function getGeneralStats(array $filters)
    {
-      $query = Product::query();
-      Log::info("DashboardController ~ getGeneralStats ~ query:" . $query->toSql());
+      // $query = Product::query();
+      // getSellerFiltersProducts();
+      // Log::info("DashboardController ~ getGeneralStats ~ query:" . $query->toSql());
 
-      // Aplicar filtros
-      $this->applyFilters($query, $filters);
+      // // Aplicar filtros
+      // $this->applyFilters($query, $filters);
+      $query = ProductMovement::query()
+         ->latestPerProduct($filters)
+         ->applyFilters($filters)
+         ->orderBy('pm.executed_at', 'asc')
+         ->orderBy('pm.product_id', 'asc');
+
+      Log::info($query->toSql());
+      Log::info($query->getBindings());
+      // ->get();
+
 
       $totalProducts = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->count();
 
       $totalInStock = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->where('location_status', 'Stock')->count();
       $totalPreActivated = (clone $query)->where('activation_status', 'Pre-activado')->count();
@@ -747,26 +876,26 @@ class DashboardController extends Controller
       $totalAssigned = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->where('location_status', 'Asignado')->count();
 
       $totalDistribuidos = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->where('location_status', 'Distribuido')->count();
       $totalActivated = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->where('activation_status', 'Activado')->count();
       $totalPortados = (clone $query)->when(
          isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
       )->where('activation_status', 'Portado')->count();
 
@@ -776,7 +905,7 @@ class DashboardController extends Controller
          ->when(
             isset($filters['seller_id']) && count($filters['seller_id']) > 0,
             function ($q) use ($filters) {
-               $q->whereIn('employee_id', $filters['seller_id']);
+               $q->whereIn('id', $filters['seller_id']);
             }
          )
          ->count();
@@ -1099,8 +1228,8 @@ class DashboardController extends Controller
             ->leftJoin('imports as i', 'p.import_id', '=', 'i.id')
             ->leftJoin('users as iu', 'i.uploaded_by', '=', 'iu.id')
             ->where('p.activation_status', 'Portado')
-            ->where('p.active', true)
-            ->whereNull('p.deleted_at');
+            ->where('p.active', true);
+         // ->whereNull('p.deleted_at');
 
          // === APLICAR FILTROS ===
 
@@ -1367,80 +1496,6 @@ class DashboardController extends Controller
    }
 
    /**
-    * Obtener reporte de portabilidad por vendedor
-    */
-   // public function getPortabilityBySellerReport(array $filters)
-   // {
-   //    $response->data = ObjResponse::DefaultResponse();
-   //    try {
-   //       $auth = Auth::user();
-
-   //       // Para vendedores, solo pueden ver su propio reporte
-   //       if ($auth->role_id === 3) {
-   //          $sellerId = $auth->id;
-   //       } else {
-   //          $sellerId = $request->get('seller_id');
-   //       }
-
-   //       $query = DB::table('products as p')
-   //          ->select(
-   //             'u.id as seller_id',
-   //             'u.name as seller_name',
-   //             'u.email as seller_email',
-   //             DB::raw('COUNT(DISTINCT p.id) as total_portados'),
-   //             DB::raw('MIN(p.updated_at) as primera_portabilidad'),
-   //             DB::raw('MAX(p.updated_at) as ultima_portabilidad'),
-   //             DB::raw('GROUP_CONCAT(DISTINCT p.folio ORDER BY p.folio SEPARATOR ", ") as folios'),
-   //             DB::raw('COUNT(DISTINCT p.folio) as total_folios')
-   //          )
-   //          ->join('lote_details as ld', function ($join) {
-   //             $join->on('p.id', '=', 'ld.product_id')
-   //                ->where('ld.active', true);
-   //          })
-   //          ->join('lotes as l', function ($join) {
-   //             $join->on('ld.lote_id', '=', 'l.id')
-   //                ->where('l.active', true);
-   //          })
-   //          ->join('users as u', 'l.seller_id', '=', 'u.id')
-   //          ->where('p.activation_status', 'Portado')
-   //          ->where('p.active', true)
-   //          ->whereNull('p.deleted_at')
-   //          ->groupBy('u.id', 'u.name', 'u.email');
-
-   //       // Filtrar por vendedor específico
-   //       if ($sellerId) {
-   //          $query->where('u.id', $sellerId);
-   //       }
-
-   //       // Filtrar por rango de fechas
-   //       if ($filters->has('start_date')) {
-   //          $query->whereDate('p.updated_at', '>=', $filters->start_date);
-   //       }
-
-   //       if ($filters->has('end_date')) {
-   //          $query->whereDate('p.updated_at', '<=', $filters->end_date);
-   //       }
-
-   //       $report = $query->get();
-
-   //       $response->data = ObjResponse::SuccessResponse();
-   //       $response->data["message"] = 'Petición satisfactoria | Reporte de portabilidad por vendedor.';
-   //       $response->data["result"] = $report;
-   //       $response->data["summary"] = [
-   //          'total_vendedores' => $report->count(),
-   //          'total_productos_portados' => $report->sum('total_portados'),
-   //          'total_folios' => $report->sum('total_folios')
-   //       ];
-   //    } catch (\Exception $ex) {
-   //       \Log::error('Error en getPortabilityBySellerReport: ' . $ex->getMessage());
-   //       // $msg = "ProductController ~ getPortabilityBySellerReport ~ Hubo un error -> " . $ex->getMessage();
-   //       // Log::error($msg);
-   //       // $response->data = ObjResponse::CatchResponse($msg);
-   //    }
-
-   //    return response()->json($response, $response->data["status_code"]);
-   // }
-   /**
     * Obtener reporte de portabilidad por vendedor (versión directa)
     */
    public function getPortabilityBySellerReport(array $filters)
@@ -1479,7 +1534,7 @@ class DashboardController extends Controller
             ->join('users as u', 'l.seller_id', '=', 'u.id')
             ->where('p.activation_status', 'Portado')
             ->where('p.active', true)
-            ->whereNull('p.deleted_at')
+            // ->whereNull('p.deleted_at')
             ->groupBy('u.id', 'u.username', 'u.email')
             ->orderBy('total_portados', 'desc');
 
