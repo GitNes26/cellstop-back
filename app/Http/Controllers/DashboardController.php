@@ -36,11 +36,24 @@ class DashboardController extends Controller
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
+
+         $query = ProductMovement::query()
+            ->latestPerProduct($filters)
+            ->applyFilters($filters)
+            ->orderBy('pm.executed_at', 'asc')
+            ->orderBy('pm.product_id', 'asc');
+
+         Log::info($query->toSql());
+         Log::info($query->getBindings());
+
+         // $list = (clone $query)->get();
+
          Log::info("filtros" . json_encode($filters, true));
          // Ejecutar todas las consultas en paralelo
-         $results = DB::transaction(function () use ($filters) {
+         $results = DB::transaction(function () use ($query,  $filters) {
             return [
-               'stats' => $this->getGeneralStats($filters),
+               // 'list' => $list,
+               'stats' => $this->getGeneralStats($query, $filters),
                'ported_products' => $this->getPortedProductsWithDetails($filters),
                // 'sellers_performance' => $this->getSellersPerformance($filters),
                'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
@@ -179,11 +192,22 @@ class DashboardController extends Controller
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
+         $query = ProductMovement::query()
+            ->latestPerProduct($filters)
+            ->applyFilters($filters)
+            ->orderBy('pm.executed_at', 'asc')
+            ->orderBy('pm.product_id', 'asc');
+
+         Log::info($query->toSql());
+         Log::info($query->getBindings());
+
+         // $list = (clone $query)->get();
 
          // Ejecutar todas las consultas en paralelo
-         $results = DB::transaction(function () use ($filters) {
+         $results = DB::transaction(function () use ($query, $filters) {
             return [
-               'stats' => $this->getGeneralStats($filters),
+               // 'list' => $list,
+               'stats' => $this->getGeneralStats($query, $filters),
                // 'ported_products' => $this->getPortedProductsWithDetails($filters),
                'sellers_performance' => $this->getSellersPerformance($filters),
                // 'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
@@ -555,7 +579,6 @@ class DashboardController extends Controller
          //          $q->where('location_status', $status);
          //       });
          // },
-
          'visits' => function ($q) use ($filters) {
             $q->when(
                isset($filters['start_date'], $filters['end_date']),
@@ -576,36 +599,38 @@ class DashboardController extends Controller
          //    ]);
          // },
       ])
+         ->with(['seller'])
          ->when($filters['pos_id'] ?? null, fn($q, $posId) => $q->where('id', $posId))
          ->get();
 
-      Log::info("pointsOfSale" . $pointsOfSale);
+      // Log::info("pointsOfSale" . $pointsOfSale);
 
       $lastDistributions = ProductMovement::select('destination', 'executed_at', 'executed_by', 'description')
          ->where('destination', 'Distribuido')
          // ->whereIn('destination', $pointsOfSale->pluck('id'))
          ->latest('executed_at')
          ->get();
-         // ->groupBy('destination');
+      // ->groupBy('destination');
 
-      Log::info("lastDistributions" . $lastDistributions);
-
-
-      $topSellers = Visit::select('pos_id', 'seller_id', DB::raw('COUNT(*) as visit_count'))
-         ->whereIn('pos_id', $pointsOfSale->pluck('id'))
-         ->groupBy('pos_id', 'seller_id')
-         ->get()
-         ->groupBy('pos_id')
-         ->map(fn($visits) => $visits->sortByDesc('visit_count')->first());
+      // Log::info("lastDistributions" . $lastDistributions);
 
 
-      $sellerInfo = VW_User::whereIn(
-         'employee_id',
-         $topSellers->pluck('seller_id')->filter()
-      )->get()->keyBy('employee_id');
+      // $topSellers = Visit::select('pos_id', 'seller_id', DB::raw('COUNT(*) as visit_count'))
+      //    ->whereIn('pos_id', $pointsOfSale->pluck('id'))
+      //    ->groupBy('pos_id', 'seller_id')
+      //    ->get()
+      //    ->groupBy('pos_id')
+      //    ->map(fn($visits) => $visits->sortByDesc('visit_count')->first());
 
 
-      return $pointsOfSale->map(function ($pos) use ($lastDistributions, $topSellers, $sellerInfo) {
+      // $sellerInfo = VW_User::whereIn(
+      //    'employee_id',
+      //    $topSellers->pluck('seller_id')->filter()
+      // )->get()->keyBy('employee_id');
+      // Log::info("sellerInfo" . $sellerInfo);
+
+
+      return $pointsOfSale->map(function ($pos) use ($lastDistributions) {
 
          // $latestVisit = $pos->latestVisit;
          // $seller = $latestVisit?->seller;
@@ -615,10 +640,10 @@ class DashboardController extends Controller
 
          $lastDistribution = $lastDistributions[$pos->id]?->first();
 
-         $topSeller = $topSellers[$pos->id] ?? null;
-         $topSellerInfo = $topSeller
-            ? $sellerInfo[$topSeller->seller_id] ?? null
-            : null;
+         // $topSeller = $topSellers[$pos->id] ?? null;
+         // $topSellerInfo = $topSeller
+         //    ? $sellerInfo[$topSeller->seller_id] ?? null
+         //    : null;
 
          return [
             'id' => $pos->id,
@@ -629,7 +654,7 @@ class DashboardController extends Controller
             'lat' => (float) $pos->lat,
             'lon' => (float) $pos->lon,
             'ubication' => $pos->ubication,
-
+            'seller' => $pos->seller,
             'inventory' => [
                // 'products' => $products->count(),
                // 'by_activation_status' => $products->groupBy('activation_status')->map->count(),
@@ -652,11 +677,11 @@ class DashboardController extends Controller
                //    'observations' => $latestVisit->observations,
                // ] : null,
 
-               'top_seller' => $topSellerInfo ? [
-                  'name' => $topSellerInfo->full_name,
-                  'pin_color' => $topSellerInfo->pin_color,
-                  'visit_count' => $topSeller->visit_count,
-               ] : null,
+               // 'top_seller' => $topSellerInfo ? [
+               //    'name' => $topSellerInfo->full_name,
+               //    'pin_color' => $topSellerInfo->pin_color,
+               //    'visit_count' => $topSeller->visit_count,
+               // ] : null,
             ],
 
             'last_distribution' => $lastDistribution ? [
@@ -839,7 +864,7 @@ class DashboardController extends Controller
          });
    }
 
-   private function getGeneralStats(array $filters)
+   private function getGeneralStats(mixed $query, array $filters)
    {
       // $query = Product::query();
       // getSellerFiltersProducts();
@@ -847,14 +872,7 @@ class DashboardController extends Controller
 
       // // Aplicar filtros
       // $this->applyFilters($query, $filters);
-      $query = ProductMovement::query()
-         ->latestPerProduct($filters)
-         ->applyFilters($filters)
-         ->orderBy('pm.executed_at', 'asc')
-         ->orderBy('pm.product_id', 'asc');
 
-      Log::info($query->toSql());
-      Log::info($query->getBindings());
       // ->get();
 
 
