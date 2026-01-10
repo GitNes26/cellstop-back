@@ -142,7 +142,7 @@ class MenuSeeder extends Seeder
                         'menu' => 'Productos',
                         'url' => '/app/productos',
                         'icon' => 'SimCardRounded',
-                        'others_permissions' => 'Carga Masiva, Importar Detalles, Asignar Productos, Importa Portaciones',
+                        'others_permissions' => 'Carga Masiva, Importar Detalles, Asignar Productos, Importa Portaciones, Portacion Manual',
                     ],
                     [
                         'menu' => 'Productos en Stock',

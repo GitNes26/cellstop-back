@@ -83,16 +83,16 @@ class VisitController extends Controller
         try {
             // Validaciones básicas
             $validator = $this->validateAvailableData($request, 'visits', [
-                [
-                    'field' => 'contact_phone',
-                    'label' => 'Teléfono de contacto',
-                    'rules' => ['nullable', 'string', 'max:10', 'min:10'],
-                    'messages' => [
-                        'string' => 'El número celular debe ser texto.',
-                        'max' => 'El número celular no puede tener más de 10 caracteres.',
-                        'min' => 'El número celular debe tener al menos 10 caracteres.',
-                    ]
-                ],
+                // [
+                //     'field' => 'contact_phone',
+                //     'label' => 'Teléfono de contacto',
+                //     'rules' => ['nullable', 'string', 'max:10', 'min:10'],
+                //     'messages' => [
+                //         'string' => 'El número celular debe ser texto.',
+                //         'max' => 'El número celular no puede tener más de 10 caracteres.',
+                //         'min' => 'El número celular debe tener al menos 10 caracteres.',
+                //     ]
+                // ],
                 [
                     'field' => 'visit_type',
                     'label' => 'Tipo de visita',
@@ -113,29 +113,31 @@ class VisitController extends Controller
             if (!$visit) $visit = new Visit();
 
             // Si se recibe un array de productos, guardarlo como JSON
-            if ($request->has('product_ids') && is_array($request->product_ids)) {
+            if ($request->has('product_ids') && count($request->product_ids) > 0) {
                 $request->merge([
                     'product_ids' => json_encode($request->product_ids)
                 ]);
             }
 
-            $visit->fill($request->except(['evidence_photo_file']));
+            $visit->fill($request->except(['evidence_photo']));
 
             $visit->save();
 
+            $this->ImageUp($request, 'evidence_photo', "visits", $visit->id, 'EVIDENCIA', $id == null ? true : false, "noImage.png", $visit);
+
             // Subida de evidencia (si aplica)
-            if ($request->hasFile('evidence_photo_file')) {
-                $this->ImageUp(
-                    $request,
-                    'evidence_photo_file',
-                    "visits",
-                    $visit->id,
-                    'EVIDENCIA',
-                    $id == null ? true : false,
-                    "noImage.png",
-                    $visit
-                );
-            }
+            // if ($request->hasFile('evidence_photo')) {
+            //     $this->ImageUp(
+            //         $request,
+            //         'evidence_photo',
+            //         "visits",
+            //         $visit->id,
+            //         'EVIDENCIA',
+            //         $id == null ? true : false,
+            //         "noImage.png",
+            //         $visit
+            //     );
+            // }
 
             // //buscar productos por su id ($request->product_ids = "[4,6,8]") hay que tratarlo como array
             // // Buscar producto relacionado si existe product_id
@@ -154,35 +156,38 @@ class VisitController extends Controller
             //         'Distribuido'
             //     );
             // }
-            // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
-            $productsIds = is_array($request->product_ids)
-                ? $request->product_ids
-                : json_decode($request->product_ids, true);
 
-            if (empty($productsIds)) {
-                return response()->json([
-                    "success" => false,
-                    "message" => "No se recibieron productos"
-                ]);
-            }
+            if (!empty($productsIds)) {
+                // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
+                $productsIds = is_array($request->product_ids)
+                    ? $request->product_ids
+                    : json_decode($request->product_ids, true);
 
-            $pos = PointOfSale::find($request->pos_id);
+                // if (empty($productsIds)) {
+                //     return response()->json([
+                //         "success" => false,
+                //         "message" => "No se recibieron productos"
+                //     ]);
+                // }
 
-            foreach ($productsIds as $id) {
+                $pos = PointOfSale::find($request->pos_id);
 
-                $product = Product::find($id);
-                if (!$product) continue;
+                foreach ($productsIds as $id) {
 
-                $product->location_status = 'Distribuido';
-                $product->save();
+                    $product = Product::find($id);
+                    if (!$product) continue;
 
-                ProductMovementService::log(
-                    $product->id,
-                    'Distribución',
-                    "El producto se encuentra en el punto de venta $pos->name",
-                    'Asignado',
-                    'Distribuido'
-                );
+                    $product->location_status = 'Distribuido';
+                    $product->save();
+
+                    ProductMovementService::log(
+                        $product->id,
+                        'Distribución',
+                        "El producto se encuentra en el punto de venta $pos->name",
+                        'Asignado',
+                        'Distribuido'
+                    );
+                }
             }
 
 

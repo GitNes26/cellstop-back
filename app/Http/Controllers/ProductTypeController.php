@@ -56,7 +56,7 @@ class ProductTypeController extends Controller
             $response->data["result"] = $list;
             $response->data["toast"] = false;
         } catch (\Exception $ex) {
-            $msg = "ProductController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
+            $msg = "ProductTypeController ~ selectIndex ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }

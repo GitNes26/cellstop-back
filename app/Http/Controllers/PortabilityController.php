@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use function PHPUnit\Framework\isNull;
+
 class PortabilityController extends Controller
 {
     /**
@@ -107,6 +109,7 @@ class PortabilityController extends Controller
                         $product->update([
                             'activation_status' => 'Portado',
                             'fecha' => !empty($row['fecha']) ? $row['fecha'] : now()->format('Y-m-d'),
+                            'evaluations_rejected' => null,
                             'updated_at' => now()
                         ]);
 
@@ -197,17 +200,113 @@ class PortabilityController extends Controller
     }
 
     /**
+     * Crear Portabilidad manual
+     */
+    public function createMultipleManually(Request $request, Response $response)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+
+        $countRegisters = sizeof($request->ids);
+
+        // Log::info("registros: " . $countRegisters);
+        DB::beginTransaction();
+
+        try {
+            $processedCount = 0;
+            $alreadyPorted = [];
+
+
+            // Buscar productos por su id
+            $products = Product::whereIn('id', $request->ids)
+                ->where('active', true)
+                ->get();
+
+            // Log::info("products: " . json_encode($products, true));
+
+            $index = 0;
+            foreach ($products as $product) {
+                // Verificar si ya está portado
+                if ($product->activation_status === 'Portado') {
+                    $alreadyPorted[] = [
+                        'index' => $index,
+                        'telefono' => $product->telefono,
+                        'iccid' => $product->iccid,
+                        'product_id' => $product->id,
+                        'already_ported_at' => $product->updated_at
+                    ];
+                    $index++;
+                    continue;
+                }
+
+                // Guardar el estado anterior
+                $previousStatus = $product->activation_status;
+
+                // Actualizar producto a "Portado"
+                $product->update([
+                    'activation_status' => 'Portado',
+                    'fecha' => now()->format('Y-m-d'),
+                    'evaluations_rejected' => null,
+                    'updated_at' => now()
+                ]);
+
+                // Registrar movimiento
+                ProductMovementService::log(
+                    $product->id,
+                    'Portabilidad Manual',
+                    "Producto portado manualmente por criterio de evaluaciones - Número: {$product->telefono}, ICCID: {$product->iccid}",
+                    $previousStatus,
+                    'Portado',
+                    Auth::id()
+                );
+
+                // Opcional: Registrar en tabla de portabilidades
+                $this->createPortabilityRecord($product, null, $product->import_id ?? null);
+
+                $index++;
+                $processedCount++;
+            }
+
+            DB::commit();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = "Procesados {$processedCount} registros portabilidad manual.";
+            $response->data["alert_text"] = "{$processedCount} productos marcados como Portado Manual.";
+
+            // Agregar métricas detalladas
+            $response->data["metrics"] = [
+                'registros_totales' => count($products),
+                'portados' => $processedCount,
+                'no_encontrados' => 0,
+                'portados_anteriormente' => count($alreadyPorted),
+                'errores' => 0
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $msg = "PortabilityController ~ createMultipleManually ~ Hubo un error -> " . $e->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+            return response()->json($response, 500);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+
+    /**
      * Crear registro en tabla de portabilidades
      */
-    private function createPortabilityRecord(Product $product, array $row, $importId = null)
+    private function createPortabilityRecord(Product $product, array $row = null, $importId = null)
     {
+
         // Si tienes tabla 'portabilities', crea el registro
         try {
+            $fecha = !empty($product->fecha) ? $product->fecha : (!isNull($row) ? $row['fecha'] : null);
+
             Portability::create([
                 'product_id' => $product->id,
-                'telefono' => $product->celular,
+                'phone_number' => $product->celular,
                 // 'iccid' => $product->iccid,
-                // 'fecha_portabilidad' => !empty($row['fecha']) ? $row['fecha'] : now()->format('Y-m-d'),
+                'activation_date' => $fecha,
+                'portability_date' => now()->format('Y-m-d'),
                 // 'operador_origen' => $row['operador_origen'] ?? $row['OPERADOR_ORIGEN'] ?? null,
                 // 'operador_destino' => $row['operador_destino'] ?? $row['OPERADOR_DESTINO'] ?? null,
                 // 'folio_portabilidad' => $row['folio'] ?? $row['FOLIO'] ?? null,

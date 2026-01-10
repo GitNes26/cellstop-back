@@ -38,6 +38,9 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('seller_id');
+            $table->index(['id', 'seller_id']);
         });
     }
 

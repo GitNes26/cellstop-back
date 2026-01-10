@@ -35,6 +35,7 @@ class Employee extends Model
         'img_firm',
         'ine_front',
         'ine_back',
+        'pin_color',
         'position_id',
         'department_id',
         // 'user_id',

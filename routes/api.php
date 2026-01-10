@@ -169,6 +169,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix("lotes")->group(function () {
         Route::get("/", [LoteController::class, 'index']);
+        Route::post("/", [LoteController::class, 'index']);
         Route::get("/selectIndex", [LoteController::class, 'selectIndex']);
         Route::post("/createOrUpdate/{id?}", [LoteController::class, 'createOrUpdate']);
         Route::get("/id/{id}", [LoteController::class, 'show']);
@@ -196,6 +197,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post("/import", [ProductController::class, 'import']);
         Route::post("/getFolios", [ProductController::class, 'getFolios']);
         Route::post("/getAvailableFoliosForLote", [ProductController::class, 'getAvailableFoliosForLote']);
+        Route::post("/selectIndexProductForVisit", [ProductController::class, 'selectIndexProductForVisit']);
 
         // Route::post("/preActivation", [ProductController::class, 'preActivation']);
         Route::get('/{id}/movements', [ProductController::class, 'movements']);
@@ -228,6 +230,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('portabilities')->group(function () {
         Route::post('/import', [PortabilityController::class, 'import']);
+        Route::post('/createMultipleManually', [PortabilityController::class, 'createMultipleManually']);
+
+
         Route::get('/product/{productId}/history', [PortabilityController::class, 'getProductPortabilityHistory']);
         Route::post('/product/{productId}/revert', [PortabilityController::class, 'revertPortability']);
         Route::get('/report', [PortabilityController::class, 'getPortabilityReport']);
@@ -247,12 +252,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Dashboard
-    Route::get('/dashboard/stats', [DashboardController::class, 'getDashboardStats']);
-    Route::get('/dashboard/export', [DashboardController::class, 'exportDashboard']);
+    Route::prefix("dashboard")->group(function () {
+        Route::get('/stats', [DashboardController::class, 'getDashboardStats']);
+
+        Route::get('/export', [DashboardController::class, 'exportDashboard']);
+        Route::get('/ported', [ProductController::class, 'getPortedProducts']);
+        Route::get('/ported/report-by-seller', [ProductController::class, 'getPortabilityBySellerReport']);
+
+        Route::post('/by-seller', [DashboardController::class, 'getSellerDashboard']);
+    });
 
     // Datos para filtros
     Route::get('/employees/sellers', [EmployeeController::class, 'getSellers']);
     Route::get('/product-types', [ProductTypeController::class, 'index']);
+
 
 
 

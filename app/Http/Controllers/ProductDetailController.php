@@ -368,7 +368,7 @@ class ProductDetailController extends Controller
             if (!empty($result['errores_encontrados'])) {
                 DB::rollBack();
                 $response->data = ObjResponse::CatchResponse("Errores en la carga masiva");
-                $response->data["errors"] = $result['errores_encontrados'];
+                $response->data["metrics"]["errors"] = $result['errores_encontrados'];
                 $response->data["processed"] = $result['registros_procesados'];
                 return response()->json($response, 200);
             }
@@ -469,6 +469,8 @@ class ProductDetailController extends Controller
                 ->where('product_id', $productId)
                 ->active()
                 ->orderBy('created_at', 'desc')
+                ->orderBy('fecha_evaluacion', 'desc')
+                ->orderBy('evaluacion', 'desc')
                 ->get();
 
             $response->data = ObjResponse::SuccessResponse();

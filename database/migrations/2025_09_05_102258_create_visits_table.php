@@ -30,8 +30,8 @@ return new class extends Migration
             $table->enum('visit_type', ['Distribución', 'Monitoreo'])->default('Monitoreo');
 
             // coordenadas de la visita
-            $table->decimal('lat', 10, 8)->nullable();
-            $table->decimal('lon', 11, 8)->nullable();
+            $table->decimal('lat', 25, 18)->nullable();
+            $table->decimal('lon', 25, 18)->nullable();
 
             // dirección o referencia textual
             $table->text('ubication')->nullable();

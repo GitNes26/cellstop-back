@@ -18,7 +18,7 @@ class LoteController extends Controller
      *
      * @return \Illuminate\Http\Response $response
      */
-    public function index(Response $response)
+    public function index(Response $response, Request $request)
     {
         $response->data = ObjResponse::DefaultResponse();
 
@@ -28,11 +28,25 @@ class LoteController extends Controller
             $list = Lote::with(['seller', 'creator'])
                 ->orderBy('id', 'desc');
 
+            if ($request->has('seller_id')) {
+                if (is_array($request->seller_id)) {
+                    $list = $list->whereIn('seller_id', $request->seller_id);
+                } else {
+                    $list = $list->where('seller_id', $request->seller_id);
+                }
+            }
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
             // Si el usuario no es administrador, sólo mostrar activos
             if ($auth->role_id > 2) {
                 $list = $list->where('active', true);
             }
 
+            // Log::info('LoteController ~ index ~ SQL: ' . $list->toSql());
+            // Log::info('LoteController ~ index ~ Bindings: ' . implode(', ', $list->getBindings()));
             $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
@@ -55,13 +69,19 @@ class LoteController extends Controller
     public function selectIndex(Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
+        $auth = Auth::user();
 
         try {
             $list = Lote::where('active', true)
                 ->with('seller:id,username,full_name')
                 ->select('id', 'lote', 'seller_id', 'folio', 'lada', 'quantity', 'description', 'preactivation_date')
-                ->orderBy('lote', 'asc')
-                ->get()
+                ->orderBy('lote', 'asc');
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
+            $list = $list->get()
                 ->map(fn($lote) => [
                     'id' => $lote->id,
                     'label' => "#{$lote->lote} - {$lote->seller->full_name}",
@@ -267,6 +287,45 @@ class LoteController extends Controller
                 : "Lotes eliminados ($countDeleted)";
         } catch (\Exception $ex) {
             $msg = "LoteController ~ deleteMultiple ~ Hubo un error -> " . $ex->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
+
+
+    /**
+     * Mostrar lista de lotes.
+     *
+     * @return \Illuminate\Http\Response $response
+     */
+    public function indexByUserId(Response $response, int $seller_id = 0)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+
+        try {
+            $auth = Auth::user();
+
+            $list = Lote::with(['seller', 'creator'])
+                ->orderBy('id', 'desc');
+
+            // Si el usuario no es administrador, sólo mostrar activos
+            if ($auth->role_id > 2) {
+                $list = $list->where('active', true);
+            }
+
+            if ($seller_id > 0) {
+                $list = $list->where('seller_id', $seller_id);
+            }
+
+            $list = $list->get();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = "Petición satisfactoria | Lista de lotes.";
+            $response->data["result"] = $list;
+        } catch (\Exception $ex) {
+            $msg = "LoteController ~ index ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);
             $response->data = ObjResponse::CatchResponse($msg);
         }

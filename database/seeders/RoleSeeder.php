@@ -22,7 +22,7 @@ class RoleSeeder extends Seeder
                 'update' => 'todas',
                 'delete' => 'todas',
                 'more_permissions' => 'todas',
-                'page_index' => '/app',
+                'page_index' => '/app/tablero',
                 'created_at' => now(),
             ],
             [
@@ -33,14 +33,14 @@ class RoleSeeder extends Seeder
                 'update' => 'todas',
                 'delete' => 'todas',
                 'more_permissions' => 'todas',
-                'page_index' => '/app',
+                'page_index' => '/app/tablero',
                 'created_at' => now(),
             ],
             [
                 'role' => 'Vendedor', #3
                 'description' => 'Rol dedicado para usuarios que realizan las ventas.',
-                'read' => null,
-                'create' => null,
+                'read' => "13,14,15,16,17,18,19,20,21,22,23,24,25",
+                'create' => "16,25",
                 'update' => null,
                 'delete' => null,
                 'more_permissions' => '',
