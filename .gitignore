@@ -3,6 +3,9 @@
 /public/build
 /public/hot
 /public/storage
+/public/employees
+/public/points_of_sale
+/public/visits
 /storage/*.key
 /vendor
 .env
