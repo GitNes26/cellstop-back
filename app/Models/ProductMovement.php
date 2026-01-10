@@ -90,8 +90,11 @@ class ProductMovement extends Model
             ->leftJoin('vw_users as s', 's.id', '=', 'l.seller_id')
             ->leftJoin('visits as v', function ($join) {
                 $join->whereRaw(
-                    "JSON_EXTRACT(v.product_ids, CAST(pm.product_id AS JSON))"
+                    "JSON_SEARCH(v.product_ids, 'one', pm.product_id)"
                 );
+                // $join->whereRaw(
+                //     "JSON_CONTAINS(v.product_ids, CAST(pm.product_id AS JSON))"
+                // );
             })
             ->select([
                 'pm.*',
