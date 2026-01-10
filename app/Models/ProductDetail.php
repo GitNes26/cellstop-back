@@ -275,6 +275,7 @@ class ProductDetail extends Model
                 // === VALIDACIÓN 3: Buscar producto ===
                 $product = null;
                 $productId = null;
+                Log::error("productCache: " . json_encode($productCache));
 
                 // Buscar en cache primero
                 if (isset($productCache[$iccid])) {
@@ -291,8 +292,13 @@ class ProductDetail extends Model
                     }
 
                     // Si no se encontró por product_id, buscar por ICCID
+                       Log::error("product: " . json_encode($product));
+                       Log::error("iccid: " . json_encode($iccid));
                     if (!$product && !empty($iccid)) {
                         $product = Product::where('iccid', $iccid)->first();
+
+                       Log::error("product-as-sa-: " . json_encode($product));
+
                         if (!$product) {
                             $errors[] = [
                                 'index' => $index,
@@ -476,79 +482,83 @@ class ProductDetail extends Model
      */
     private static function checkDuplicateCriteria(array $detail): array
     {
-        $iccid = trim($detail['ICCID'] ?? '');
-        $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
-        $evaluacion = trim($detail['EVALUACION'] ?? '');
-        $fechaEvaluacion = trim($detail['FECHA_EVALUACION'] ?? '');
+        try {
+            $iccid = trim($detail['ICCID'] ?? '');
+            $estatusPago = trim($detail['ESTATUS_PAGO'] ?? '');
+            $evaluacion = trim($detail['EVALUACION'] ?? '');
+            $fechaEvaluacion = trim($detail['FECHA_EVALUACION'] ?? '');
 
-        // Si falta algún campo clave, no se considera duplicado (será error de validación)
-        if (empty($iccid) || empty($estatusPago)) {
-            return ['is_duplicate' => false];
-        }
-
-        // Buscar registros existentes con el mismo ICCID
-        $existingRecords = self::where('iccid', $iccid)
-            ->orderBy('created_at', 'desc')
-            ->take(10) // Revisar los últimos 10 registros
-            ->get();
-
-        foreach ($existingRecords as $existing) {
-            // Criterio 1: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION + Misma FECHA_EVALUACION
-            if (
-                $existing->estatus_pago === $estatusPago &&
-                $existing->evaluacion === $evaluacion &&
-                $existing->fecha_evaluacion == $fechaEvaluacion
-                // $existing->fecha_evaluacion == self::parseDate($fechaEvaluacion)
-            ) {
-                return [
-                    'is_duplicate' => true,
-                    'reason' => 'Registro idéntico encontrado (ICCID, Estatus Pago, Evaluación, Fecha Evaluación)',
-                    'existing_record' => [
-                        'id' => $existing->id,
-                        'created_at' => $existing->created_at,
-                        'estatus_pago' => $existing->estatus_pago,
-                        'evaluacion' => $existing->evaluacion,
-                        'fecha_evaluacion' => $existing->fecha_evaluacion
-                    ]
-                ];
+            // Si falta algún campo clave, no se considera duplicado (será error de validación)
+            if (empty($iccid) || empty($estatusPago)) {
+                return ['is_duplicate' => false];
             }
 
-            // // Criterio 2: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION (sin fecha)
-            // if (
-            //     $existing->estatus_pago === $estatusPago &&
-            //     $existing->evaluacion === $evaluacion &&
-            //     empty($fechaEvaluacion)
-            // ) {
-            //     return [
-            //         'is_duplicate' => true,
-            //         'reason' => 'Registro similar encontrado (ICCID, Estatus Pago, Evaluación)',
-            //         'existing_record' => [
-            //             'id' => $existing->id,
-            //             'created_at' => $existing->created_at,
-            //             'estatus_pago' => $existing->estatus_pago,
-            //             'evaluacion' => $existing->evaluacion
-            //         ]
-            //     ];
-            // }
+            // Buscar registros existentes con el mismo ICCID
+            $existingRecords = self::where('iccid', $iccid)
+                ->orderBy('created_at', 'desc')
+                ->take(10) // Revisar los últimos 10 registros
+                ->get();
 
-            // // Criterio 3: Mismo ICCID + Mismo ESTATUS_PAGO en las últimas 24 horas
-            // if (
-            //     $existing->estatus_pago === $estatusPago &&
-            //     $existing->created_at->gt(now()->subHours(24))
-            // ) {
-            //     return [
-            //         'is_duplicate' => true,
-            //         'reason' => 'Mismo estatus de pago registrado en las últimas 24 horas',
-            //         'existing_record' => [
-            //             'id' => $existing->id,
-            //             'created_at' => $existing->created_at,
-            //             'estatus_pago' => $existing->estatus_pago
-            //         ]
-            //     ];
-            // }
+            foreach ($existingRecords as $existing) {
+                // Criterio 1: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION + Misma FECHA_EVALUACION
+                if (
+                    $existing->estatus_pago === $estatusPago &&
+                    $existing->evaluacion === $evaluacion &&
+                    $existing->fecha_evaluacion == $fechaEvaluacion
+                    // $existing->fecha_evaluacion == self::parseDate($fechaEvaluacion)
+                ) {
+                    return [
+                        'is_duplicate' => true,
+                        'reason' => 'Registro idéntico encontrado (ICCID, Estatus Pago, Evaluación, Fecha Evaluación)',
+                        'existing_record' => [
+                            'id' => $existing->id,
+                            'created_at' => $existing->created_at,
+                            'estatus_pago' => $existing->estatus_pago,
+                            'evaluacion' => $existing->evaluacion,
+                            'fecha_evaluacion' => $existing->fecha_evaluacion
+                        ]
+                    ];
+                }
+
+                // // Criterio 2: Mismo ICCID + Mismo ESTATUS_PAGO + Misma EVALUACION (sin fecha)
+                // if (
+                //     $existing->estatus_pago === $estatusPago &&
+                //     $existing->evaluacion === $evaluacion &&
+                //     empty($fechaEvaluacion)
+                // ) {
+                //     return [
+                //         'is_duplicate' => true,
+                //         'reason' => 'Registro similar encontrado (ICCID, Estatus Pago, Evaluación)',
+                //         'existing_record' => [
+                //             'id' => $existing->id,
+                //             'created_at' => $existing->created_at,
+                //             'estatus_pago' => $existing->estatus_pago,
+                //             'evaluacion' => $existing->evaluacion
+                //         ]
+                //     ];
+                // }
+
+                // // Criterio 3: Mismo ICCID + Mismo ESTATUS_PAGO en las últimas 24 horas
+                // if (
+                //     $existing->estatus_pago === $estatusPago &&
+                //     $existing->created_at->gt(now()->subHours(24))
+                // ) {
+                //     return [
+                //         'is_duplicate' => true,
+                //         'reason' => 'Mismo estatus de pago registrado en las últimas 24 horas',
+                //         'existing_record' => [
+                //             'id' => $existing->id,
+                //             'created_at' => $existing->created_at,
+                //             'estatus_pago' => $existing->estatus_pago
+                //         ]
+                //     ];
+                // }
+            }
+
+            return ['is_duplicate' => false];
+        } catch (\Exception $e) {
+            Log::error("ProductDetail ~ checkDuplicateCriteria ~error" . $e->getMessage());
         }
-
-        return ['is_duplicate' => false];
     }
 
     /**
@@ -556,40 +566,44 @@ class ProductDetail extends Model
      */
     private static function updateProductWarnings(array $productsToFlag): void
     {
-        foreach ($productsToFlag as $data) {
-            $product = $data['product'];
-            $warningLevel = $data['warning_level'];
-            $rechazadasConsecutivas = $data['rechazadas_consecutivas'];
+        try {
+            foreach ($productsToFlag as $data) {
+                $product = $data['product'];
+                $warningLevel = $data['warning_level'];
+                $rechazadasConsecutivas = $data['rechazadas_consecutivas'];
 
-            // Actualizar el campo evaluations_rejected
-            $product->update([
-                'evaluations_rejected' => $warningLevel,
-                // 'rejected_count' => $rechazadasConsecutivas,
-                // 'last_rejection_check' => now(),
-                'updated_at' => now()
-            ]);
+                // Actualizar el campo evaluations_rejected
+                $product->update([
+                    'evaluations_rejected' => $warningLevel,
+                    // 'rejected_count' => $rechazadasConsecutivas,
+                    // 'last_rejection_check' => now(),
+                    'updated_at' => now()
+                ]);
 
-            $lastMovement = ProductMovement::where('product_id', $product->id)
-                ->orderBy('created_at', 'desc')
-                ->first();
+                $lastMovement = ProductMovement::where('product_id', $product->id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
 
-            // Registrar el movimiento
-            ProductMovementService::log(
-                $product->id,
-                'Alerta de evaluaciones',
-                "El producto cuenta con $rechazadasConsecutivas evaluaciones RECHAZADAS seguidas - $warningLevel - en detalle de línea - ICCID: {$product->iccid}",
-                $lastMovement->origin,
-                $lastMovement->destination,
-                auth()->id()
-            );
+                // Registrar el movimiento
+                ProductMovementService::log(
+                    $product->id,
+                    'Alerta de evaluaciones',
+                    "El producto cuenta con $rechazadasConsecutivas evaluaciones RECHAZADAS seguidas - $warningLevel - en detalle de línea - ICCID: {$product->iccid}",
+                    $lastMovement->origin,
+                    $lastMovement->destination,
+                    auth()->id()
+                );
 
-            // // Opcional: Log del cambio
-            // Log::info("Producto marcado con advertencia", [
-            //     'product_id' => $product->id,
-            //     'iccid' => $product->iccid,
-            //     'warning_level' => $warningLevel,
-            //     'rechazadas_consecutivas' => $rechazadasConsecutivas
-            // ]);
+                // // Opcional: Log del cambio
+                // Log::info("Producto marcado con advertencia", [
+                //     'product_id' => $product->id,
+                //     'iccid' => $product->iccid,
+                //     'warning_level' => $warningLevel,
+                //     'rechazadas_consecutivas' => $rechazadasConsecutivas
+                // ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("ProductDetail ~ updateProductWarnings ~error" . $e->getMessage());
         }
     }
 
@@ -600,38 +614,42 @@ class ProductDetail extends Model
     {
         // $normalizerData = new NormalizerDateService();
 
-        foreach ($productsToUpdate as $item) {
-            $product = $item['product'];
-            $detail = $item['detail_data'];
+        try {
+            foreach ($productsToUpdate as $item) {
+                $product = $item['product'];
+                $detail = $item['detail_data'];
 
-            // Actualizar el producto
-            $product->update([
-                'activation_status' => 'Activado',
-                // 'fecha' => !empty($detail['FECHA_ACTIV']) ? $normalizerData->normalizeDate($detail['FECHA_ACTIV']) : now(),
-                'updated_at' => now()
-            ]);
+                // Actualizar el producto
+                $product->update([
+                    'activation_status' => 'Activado',
+                    // 'fecha' => !empty($detail['FECHA_ACTIV']) ? $normalizerData->normalizeDate($detail['FECHA_ACTIV']) : now(),
+                    'updated_at' => now()
+                ]);
 
-            $lastMovement = ProductMovement::where('product_id', $product->id)
-                ->orderBy('created_at', 'desc')
-                ->first();
+                $lastMovement = ProductMovement::where('product_id', $product->id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
 
-            // Registrar el movimiento
-            ProductMovementService::log(
-                $product->id,
-                'Activación automática',
-                "Producto activado automáticamente por pago confirmado en detalle de línea - ICCID: {$product->iccid}",
-                $lastMovement->origin,
-                'Activado',
-                auth()->id()
-            );
+                // Registrar el movimiento
+                ProductMovementService::log(
+                    $product->id,
+                    'Activación automática',
+                    "Producto activado automáticamente por pago confirmado en detalle de línea - ICCID: {$product->iccid}",
+                    $lastMovement->origin,
+                    'Activado',
+                    auth()->id()
+                );
 
-            // Opcional: Log adicional para debugging
-            // Log::info("Producto activado automáticamente", [
-            //     'product_id' => $product->id,
-            //     'iccid' => $product->iccid,
-            //     'estatus_pago' => $detail['ESTATUS_PAGO'],
-            //     'fecha_activ' => $detail['FECHA_ACTIV'] ?? 'N/A'
-            // ]);
+                // Opcional: Log adicional para debugging
+                // Log::info("Producto activado automáticamente", [
+                //     'product_id' => $product->id,
+                //     'iccid' => $product->iccid,
+                //     'estatus_pago' => $detail['ESTATUS_PAGO'],
+                //     'fecha_activ' => $detail['FECHA_ACTIV'] ?? 'N/A'
+                // ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("ProductDetail ~ updateProductsFromDetalles ~error" . $e->getMessage());
         }
     }
 
