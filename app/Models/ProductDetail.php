@@ -292,12 +292,12 @@ class ProductDetail extends Model
                     }
 
                     // Si no se encontró por product_id, buscar por ICCID
-                       Log::error("product: " . json_encode($product));
-                       Log::error("iccid: " . json_encode($iccid));
+                    Log::error("product: " . json_encode($product));
+                    Log::error("iccid: " . json_encode($iccid));
                     if (!$product && !empty($iccid)) {
-                        $product = Product::where('iccid', $iccid)->first();
+                        $product = Product::where('iccid', 'like', "$iccid%")->first();
 
-                       Log::error("product-as-sa-: " . json_encode($product));
+                        Log::error("product-as-sa-: " . json_encode($product));
 
                         if (!$product) {
                             $errors[] = [
@@ -327,7 +327,7 @@ class ProductDetail extends Model
                 if ($estatusPago === 'RECHAZADA') {
                     if (!isset($recentEvaluationsCache[$iccid])) {
                         // Obtener las últimas 4 evaluaciones del producto
-                        $recentEvaluations = self::where('iccid', $iccid)
+                        $recentEvaluations = self::where('iccid', 'like', "$iccid%")
                             ->whereNotNull('estatus_pago')
                             ->orderBy('fecha_evaluacion', 'desc')
                             ->orderBy('created_at', 'desc')
@@ -494,7 +494,7 @@ class ProductDetail extends Model
             }
 
             // Buscar registros existentes con el mismo ICCID
-            $existingRecords = self::where('iccid', $iccid)
+            $existingRecords = self::where('iccid', 'like', "$iccid%")
                 ->orderBy('created_at', 'desc')
                 ->take(10) // Revisar los últimos 10 registros
                 ->get();
