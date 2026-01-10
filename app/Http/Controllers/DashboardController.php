@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use function PHPUnit\Framework\isNull;
+
 class DashboardController extends Controller
 {
    public function getDashboardStats(Request $request, Response $response)
@@ -43,8 +45,8 @@ class DashboardController extends Controller
             ->orderBy('pm.executed_at', 'asc')
             ->orderBy('pm.product_id', 'asc');
 
-         Log::info($query->toSql());
-         Log::info($query->getBindings());
+         // Log::info($query->toSql());
+         // Log::info($query->getBindings());
 
          // $list = (clone $query)->get();
 
@@ -54,16 +56,17 @@ class DashboardController extends Controller
             return [
                // 'list' => $list,
                'stats' => $this->getGeneralStats($query, $filters),
-               'ported_products' => $this->getPortedProductsWithDetails($filters),
+               // 'ported_products' => $this->getPortedProductsWithDetails($filters),
                'sellers_performance' => $this->getSellersDashboard($filters),
+               // 'movements_per_day' => $this->getMovementsPerDay($query, $filters),
                'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
                // 'portability_by_month' => $this->getPortabilityByMonth($filters),
-               'top_sellers' => $this->getTopSellers($filters),
+               'top_sellers' => $this->getTopSellers($query, $filters),
                // 'status_distribution' => $this->getStatusDistribution($filters),
                // 'top_products' => $this->getTopProducts($filters),
                // 'visits_summary' => $this->getVisitsSummary($filters),
                // 'ported_products' => $this->getPortedProducts($filters),
-               'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
+               // 'get_portability_by_seller_report' => $this->getPortabilityBySellerReport($filters),
             ];
          });
 
@@ -97,7 +100,7 @@ class DashboardController extends Controller
          'products.tipo_sim',
          'products.updated_at as ported_date',
       ])
-         ->with(['loteDetails.lote.seller.personalInfo'])
+         ->with(['loteDetails.lote.seller'])
          ->where('products.activation_status', 'Portado')
          ->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
             $q->whereBetween('products.updated_at', [$filters['start_date'], $filters['end_date']]);
@@ -120,7 +123,7 @@ class DashboardController extends Controller
          ->map(function ($product) {
             $loteDetail = $product->loteDetails->first();
             $seller = $loteDetail?->lote?->seller;
-            $personalInfo = $seller?->personalInfo;
+            // $personalInfo = $seller?->personalInfo;
 
             return [
                'product_id' => $product->id,
@@ -144,15 +147,118 @@ class DashboardController extends Controller
 
                // Información del vendedor
                'seller_id' => $seller?->id,
-               'seller_name' => $personalInfo?->full_name ?? 'No asignado',
+               // 'seller_name' => $personalInfo?->full_name ?? 'No asignado',
                'seller_pin_color' => $seller?->pin_color ?? '#ccc',
-               'seller_cellphone' => $personalInfo?->cellphone,
-               'seller_position' => $personalInfo?->position,
+               // 'seller_cellphone' => $personalInfo?->cellphone,
+               // 'seller_position' => $personalInfo?->position,
 
                // Distribución si aplica
                'distributed_to' => $this->getDistributionPoint($product),
             ];
          });
+   }
+
+   private function getMovementsPerDay($query, array $filters)
+   {
+      try {
+         $registers = (clone $query)->get();
+
+         // Determinar rango de fechas (preferir filtros; si no vienen, usar primer/último registro)
+         $startStr = isset($filters['start_date']) && $filters['start_date']
+            ? $filters['start_date']
+            : (count($registers) > 0 ? ($registers->first()->executed_at ?? $registers->first()['executed_at']) : null);
+
+         $endStr = isset($filters['end_date']) && $filters['end_date']
+            ? $filters['end_date']
+            : (count($registers) > 0 ? ($registers->last()->executed_at ?? $registers->last()['executed_at']) : null);
+
+         if (!$startStr || !$endStr) {
+            return [
+               'dates' => [],
+               'assigned' => [],
+               'distributed' => [],
+               'activated' => [],
+               'ported' => [],
+            ];
+         }
+
+         try {
+            $startDate = new \DateTime(substr($startStr, 0, 10));
+            $endDate = new \DateTime(substr($endStr, 0, 10));
+         } catch (\Exception $e) {
+            return [
+               'dates' => [],
+               'assigned' => [],
+               'distributed' => [],
+               'activated' => [],
+               'ported' => [],
+            ];
+         }
+
+         // Asegurar orden correcto
+         if ($startDate > $endDate) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+         }
+
+         // Construir array de fechas (Y-m-d) sin usar Carbon
+         $dates = [];
+         $current = clone $startDate;
+         while ($current <= $endDate) {
+            $dates[] = $current->format('Y-m-d');
+            $current->modify('+1 day');
+         }
+
+         // Helper para obtener conteos agrupados por día para un destino dado
+         $getDailyCounts = function ($destination) use ($query, $filters) {
+            $builder = (clone $query)->when(
+               isset($filters['start_date']) && isset($filters['end_date']),
+               function ($q) use ($filters) {
+                  $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
+               }
+            );
+
+            $rows = $builder->where('destination', $destination)
+               ->selectRaw("DATE(executed_at) as day, COUNT(*) as count")
+               ->groupBy('day')
+               ->get()
+               ->pluck('count', 'day')
+               ->toArray();
+
+            return $rows;
+         };
+
+         $assignedRows = $getDailyCounts('Asignado');
+         $distributedRows = $getDailyCounts('Distribuido');
+         $activatedRows = $getDailyCounts('Activado');
+         $portedRows = $getDailyCounts('Portado');
+
+         // Rellenar todas las fechas del rango con 0 cuando no existan registros
+         $assigned = [];
+         $distributed = [];
+         $activated = [];
+         $ported = [];
+
+         foreach ($dates as $d) {
+            $assigned[$d] = isset($assignedRows[$d]) ? (int) $assignedRows[$d] : 0;
+            $distributed[$d] = isset($distributedRows[$d]) ? (int) $distributedRows[$d] : 0;
+            $activated[$d] = isset($activatedRows[$d]) ? (int) $activatedRows[$d] : 0;
+            $ported[$d] = isset($portedRows[$d]) ? (int) $portedRows[$d] : 0;
+         }
+
+         return [
+            'dates' => $dates,
+            'assigned' => $assigned,
+            'distributed' => $distributed,
+            'activated' => $activated,
+            'ported' => $ported,
+         ];
+      } catch (\Exception $ex) {
+         $msg = "DashboardController ~ getMovementsPerDay ~ Hubo un error -> " . $ex->getMessage();
+         Log::error($msg);
+         Log::error('Stack Trace: ' . $ex->getTraceAsString());
+      }
    }
 
    private function getDistributionPoint(Product $product)
@@ -198,8 +304,8 @@ class DashboardController extends Controller
             ->orderBy('pm.executed_at', 'asc')
             ->orderBy('pm.product_id', 'asc');
 
-         Log::info($query->toSql());
-         Log::info($query->getBindings());
+         // Log::info($query->toSql());
+         // Log::info($query->getBindings());
 
          // $list = (clone $query)->get();
 
@@ -339,7 +445,7 @@ class DashboardController extends Controller
                      ? round((($activeProducts->count() * 100) / $assignedProducts->count()), 2)
                      : 0,
                   'deficiency' => $assignedProducts->count() > 0
-                     ? round((($portedProducts->count)() * 100 / $assignedProducts->count()), 2)
+                     ? round((($portedProducts->count() * 100) / $assignedProducts->count()), 2)
                      : 0,
 
                   // Desglose por estatus
@@ -513,7 +619,7 @@ class DashboardController extends Controller
                   ? round((($activeProducts->count() * 100) / $assignedProducts->count()), 2)
                   : 0,
                'deficiency' => $assignedProducts->count() > 0
-                  ? round((($portedProducts->count)() * 100 / $assignedProducts->count()), 2)
+                  ? round((($portedProducts->count() * 100) / $assignedProducts->count()), 2)
                   : 0,
 
 
@@ -522,8 +628,8 @@ class DashboardController extends Controller
                'points_of_sale' => $assignedPOS->count(),
 
                // Visitas
-               'visits' => 0,//$visits->count(),
-               'daily' => 0,//$dailyVisits->count(),
+               'visits' => 0, //$visits->count(),
+               'daily' => 0, //$dailyVisits->count(),
 
                // Lotes asignados
                'lotes' => Lote::where('seller_id', $sellerId)
@@ -628,8 +734,8 @@ class DashboardController extends Controller
          ->orderBy('pm.executed_at', 'asc')
          ->orderBy('pm.product_id', 'asc');
 
-      Log::info($list->toSql());
-      Log::info($list->getBindings());
+      // Log::info($list->toSql());
+      // Log::info($list->getBindings());
       return $list->get();
 
       // CONSULTA DESDE PRODUCTOS, ligandolos por lotes y movimientos
@@ -1160,69 +1266,116 @@ class DashboardController extends Controller
          });
    }
 
-   private function getTopSellers(array $filters)
+   private function getTopSellers($query, array $filters)
    {
       try {
          // Consulta optimizada para obtener los mejores vendedores por portaciones
-         $topSellers = DB::table('products as p')
+
+         // Log::info($query->toSql());
+         // Log::info($query->getBindings());
+
+         $listBestSeller = (clone $query)
+            ->reorder() // 🔥 EL FIX CLAVE
+            ->where('pm.destination', 'Activado')
+            ->groupBy('l.seller_id', 's.full_name')
             ->select([
-               'e.id',
-               DB::raw('CONCAT(e.name, " ", e.plast_name) as seller_name'),
-               'e.pin_color',
-               DB::raw('COUNT(p.id) as port_count'),
-               DB::raw('MAX(p.updated_at) as last_port_date')
+               's.full_name as seller',
+               DB::raw('COUNT(*) as data'),
             ])
-            ->join('lote_details as ld', 'p.id', '=', 'ld.product_id')
-            ->join('lotes as l', 'ld.lote_id', '=', 'l.id')
-            ->join('vw_employees as e', 'l.seller_id', '=', 'e.id')
-            ->where('p.activation_status', 'Portado')
-            ->where('p.active', 1)
-
-            // Aplicar filtros de fecha
-            ->when(
-               isset($filters['start_date']) && isset($filters['end_date']),
-               function ($query) use ($filters) {
-                  return $query->whereBetween('p.updated_at', [
-                     $filters['start_date'],
-                     $filters['end_date']
-                  ]);
-               }
-            )
-
-            // Filtrar por vendedores específicos
-            ->when(
-               isset($filters['seller_id']) && count($filters['seller_id']) > 0,
-               function ($query) use ($filters) {
-                  return $query->whereIn('l.seller_id', $filters['seller_id']);
-               }
-            )
-
-            // Filtrar por búsqueda
-            ->when(
-               isset($filters['search']),
-               function ($query) use ($filters) {
-                  return $query->where(function ($q) use ($filters) {
-                     $q->where('p.celular', 'like', "%{$filters['search']}%")
-                        ->orWhere('p.iccid', 'like', "%{$filters['search']}%");
-                  });
-               }
-            )
-
-            ->groupBy('e.id', 'e.pin_color', 'e.name', 'e.plast_name')
-            ->orderByDesc('port_count')
+            ->orderBy('data')
             ->limit(10)
-            ->get()
-            ->map(function ($seller) {
-               return [
-                  'id' => $seller->id,
-                  'name' => $seller->seller_name ?? 'Vendedor ' . $seller->id,
-                  'pin_color' => $seller->pin_color ?? $this->generateSellerColor($seller->id),
-                  'port_count' => (int) $seller->port_count,
-                  'last_port_date' => $seller->last_port_date,
-               ];
-            });
+            ->get();
 
-         return $topSellers;
+         $listBadSeller = (clone $query)
+            ->reorder() // 🔥 EL FIX CLAVE
+            ->where('pm.destination', 'Portado')
+            ->groupBy('l.seller_id', 's.full_name')
+            ->select([
+               's.full_name as seller',
+               DB::raw('COUNT(*) as data'),
+            ])
+            ->orderBy('data')
+            ->limit(10)
+            ->get();
+         // Log::info($listBad->toSql());
+         // Log::info($listBad->getBindings());
+         // return $listBad->get();
+         return [
+            'bestSeller' => [
+               'listBad' => $listBestSeller,
+               'labels' => $listBestSeller->map(fn($r) => $r->seller ?? 'S/A')->values(),
+               'data'   => $listBestSeller->map(fn($r) => (int) $r->data)->values(),
+            ],
+            'badSeller' => [
+               'listBad' => $listBadSeller,
+               'labels' => $listBadSeller->map(fn($r) => $r->seller ?? 'S/A')->values(),
+               'data'   => $listBadSeller->map(fn($r) => (int) $r->data)->values(),
+            ]
+         ];
+
+
+
+
+
+         // $topSellers = DB::table('products as p')
+         //    ->select([
+         //       'e.id',
+         //       DB::raw('CONCAT(e.name, " ", e.plast_name) as seller_name'),
+         //       'e.pin_color',
+         //       DB::raw('COUNT(p.id) as port_count'),
+         //       DB::raw('MAX(p.updated_at) as last_port_date')
+         //    ])
+         //    ->join('lote_details as ld', 'p.id', '=', 'ld.product_id')
+         //    ->join('lotes as l', 'ld.lote_id', '=', 'l.id')
+         //    ->join('vw_employees as e', 'l.seller_id', '=', 'e.id')
+         //    ->where('p.activation_status', 'Portado')
+         //    ->where('p.active', 1)
+
+         //    // Aplicar filtros de fecha
+         //    ->when(
+         //       isset($filters['start_date']) && isset($filters['end_date']),
+         //       function ($query) use ($filters) {
+         //          return $query->whereBetween('p.updated_at', [
+         //             $filters['start_date'],
+         //             $filters['end_date']
+         //          ]);
+         //       }
+         //    )
+
+         //    // Filtrar por vendedores específicos
+         //    ->when(
+         //       isset($filters['seller_id']) && count($filters['seller_id']) > 0,
+         //       function ($query) use ($filters) {
+         //          return $query->whereIn('l.seller_id', $filters['seller_id']);
+         //       }
+         //    )
+
+         //    // Filtrar por búsqueda
+         //    ->when(
+         //       isset($filters['search']),
+         //       function ($query) use ($filters) {
+         //          return $query->where(function ($q) use ($filters) {
+         //             $q->where('p.celular', 'like', "%{$filters['search']}%")
+         //                ->orWhere('p.iccid', 'like', "%{$filters['search']}%");
+         //          });
+         //       }
+         //    )
+
+         //    ->groupBy('e.id', 'e.pin_color', 'e.name', 'e.plast_name')
+         //    ->orderByDesc('port_count')
+         //    ->limit(10)
+         //    ->get()
+         //    ->map(function ($seller) {
+         //       return [
+         //          'id' => $seller->id,
+         //          'name' => $seller->seller_name ?? 'Vendedor ' . $seller->id,
+         //          'pin_color' => $seller->pin_color ?? $this->generateSellerColor($seller->id),
+         //          'port_count' => (int) $seller->port_count,
+         //          'last_port_date' => $seller->last_port_date,
+         //       ];
+         //    });
+
+         // return $topSellers;
       } catch (\Exception $e) {
          Log::error('Error en getTopSellers: ' . $e->getMessage());
          Log::error('Stack Trace: ' . $e->getTraceAsString());

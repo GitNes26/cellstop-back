@@ -127,6 +127,11 @@ class PointOfSaleController extends Controller
             $point->fill($request->all());
             $point->save();
 
+            $point->fill($request->except(['img']));
+            $point->save();
+
+            $this->ImageUp($request, 'img', "points_of_sale", $point->id, 'IMAGEN', $id == null ? true : false, "noImage.png", $point);
+
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = $id > 0
                 ? 'Petición satisfactoria | Punto de venta editado.'

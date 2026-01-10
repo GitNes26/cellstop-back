@@ -22,7 +22,7 @@ class RoleSeeder extends Seeder
                 'update' => 'todas',
                 'delete' => 'todas',
                 'more_permissions' => 'todas',
-                'page_index' => '/app',
+                'page_index' => '/app/tablero',
                 'created_at' => now(),
             ],
             [
@@ -33,7 +33,7 @@ class RoleSeeder extends Seeder
                 'update' => 'todas',
                 'delete' => 'todas',
                 'more_permissions' => 'todas',
-                'page_index' => '/app',
+                'page_index' => '/app/tablero',
                 'created_at' => now(),
             ],
             [

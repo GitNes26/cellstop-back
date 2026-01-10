@@ -22,7 +22,7 @@ class PointOfSale extends Model
      * Los atributos que se solicitan y se guardan con la funcion fillable() en el controlador.
      * @var array<int, string>
      */
-    protected $fillable = ['name', 'contact_name', 'contact_phone', 'address', 'lat', 'lon', 'ubication', 'seller_id', 'active'];
+    protected $fillable = ['name', 'contact_name', 'contact_phone', 'address', 'lat', 'lon', 'ubication', 'img', 'seller_id', 'active'];
 
 
     /**

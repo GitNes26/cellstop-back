@@ -230,6 +230,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('portabilities')->group(function () {
         Route::post('/import', [PortabilityController::class, 'import']);
+        Route::post('/createMultipleManually', [PortabilityController::class, 'createMultipleManually']);
+
+
         Route::get('/product/{productId}/history', [PortabilityController::class, 'getProductPortabilityHistory']);
         Route::post('/product/{productId}/revert', [PortabilityController::class, 'revertPortability']);
         Route::get('/report', [PortabilityController::class, 'getPortabilityReport']);

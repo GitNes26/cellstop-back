@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('lat', 25, 18)->nullable();
             $table->decimal('lon', 25, 18)->nullable();
             $table->text('ubication')->nullable();
+            $table->text('img')->nullable();
             $table->foreignId('seller_id')->constrained('users')->onDelete('restrict')->onUpdate('cascade');
 
             $table->boolean('active')->default(true);
