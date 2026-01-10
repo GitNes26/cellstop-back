@@ -93,7 +93,7 @@ class ProductMovement extends Model
                     "JSON_SEARCH(v.product_ids, 'one', pm.product_id)"
                 );
                 // $join->whereRaw(
-                //     "JSON_CONTAINS(v.product_ids, CAST(pm.product_id AS JSON))"
+                //     "JSON_CONTAINS(v.product_ids, CAST(pm.product_id AS JSON))"git 
                 // );
             })
             ->select([
