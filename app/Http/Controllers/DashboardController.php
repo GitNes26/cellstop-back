@@ -10,6 +10,7 @@ use App\Models\PointOfSale;
 use App\Models\Product;
 use App\Models\ProductMovement;
 use App\Models\Visit;
+use App\Models\VW_LatestProductMovements;
 use App\Models\VW_User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -17,7 +18,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-use function PHPUnit\Framework\isNull;
 
 class DashboardController extends Controller
 {
@@ -39,14 +39,14 @@ class DashboardController extends Controller
          ]);
 
 
-         $query = ProductMovement::query()
-            ->latestPerProduct($filters)
+         // $query = ProductMovement::query()
+         $query = VW_LatestProductMovements::query()
             ->applyFilters($filters)
-            ->orderBy('pm.executed_at', 'asc')
-            ->orderBy('pm.product_id', 'asc');
+            ->orderBy('executed_at', 'asc')
+            ->orderBy('product_id', 'asc');
 
-         // Log::info($query->toSql());
-         // Log::info($query->getBindings());
+         Log::info($query->toSql());
+         Log::info($query->getBindings());
 
          // $list = (clone $query)->get();
 
@@ -298,11 +298,10 @@ class DashboardController extends Controller
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
-         $query = ProductMovement::query()
-            ->latestPerProduct($filters)
-            ->applyFilters($filters)
-            ->orderBy('pm.executed_at', 'asc')
-            ->orderBy('pm.product_id', 'asc');
+         // $query = ProductMovement::query()
+         $query = VW_LatestProductMovements::applyFilters($filters)
+            ->orderBy('executed_at', 'asc')
+            ->orderBy('product_id', 'asc');
 
          // Log::info($query->toSql());
          // Log::info($query->getBindings());
@@ -1276,10 +1275,10 @@ class DashboardController extends Controller
 
          $listBestSeller = (clone $query)
             ->reorder() // 🔥 EL FIX CLAVE
-            ->where('pm.destination', 'Activado')
-            ->groupBy('l.seller_id', 's.full_name')
+            ->where('destination', 'Activado')
+            ->groupBy('seller_id', 'full_name')
             ->select([
-               's.full_name as seller',
+               'full_name as seller',
                DB::raw('COUNT(*) as data'),
             ])
             ->orderBy('data')
@@ -1288,10 +1287,10 @@ class DashboardController extends Controller
 
          $listBadSeller = (clone $query)
             ->reorder() // 🔥 EL FIX CLAVE
-            ->where('pm.destination', 'Portado')
-            ->groupBy('l.seller_id', 's.full_name')
+            ->where('destination', 'Portado')
+            ->groupBy('seller_id', 'full_name')
             ->select([
-               's.full_name as seller',
+               'full_name as seller',
                DB::raw('COUNT(*) as data'),
             ])
             ->orderBy('data')
@@ -1302,12 +1301,12 @@ class DashboardController extends Controller
          // return $listBad->get();
          return [
             'bestSeller' => [
-               'listBad' => $listBestSeller,
+               'list' => $listBestSeller,
                'labels' => $listBestSeller->map(fn($r) => $r->seller ?? 'S/A')->values(),
                'data'   => $listBestSeller->map(fn($r) => (int) $r->data)->values(),
             ],
             'badSeller' => [
-               'listBad' => $listBadSeller,
+               'list' => $listBadSeller,
                'labels' => $listBadSeller->map(fn($r) => $r->seller ?? 'S/A')->values(),
                'data'   => $listBadSeller->map(fn($r) => (int) $r->data)->values(),
             ]

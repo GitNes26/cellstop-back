@@ -12,13 +12,40 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement(
-            "CREATE VIEW vw_latest_product_movements AS
-            SELECT product_id, MAX(executed_at) AS max_executed_at
+        DB::statement("CREATE VIEW vw_latest_product_movements AS
+        SELECT pm.*,
+            p.iccid, p.imei, p.fecha, p.celular, p.folio, p.num_orden,
+            p.tipo_sim, p.modelo, p.marca, p.color, p.location_status,
+            p.activation_status, p.product_type_id, pt.product_type,
+            p.evaluations_rejected,
+            i.name import_name,
+            l.lote, l.lada, l.preactivation_date, l.quantity, l.description description_lote, l.seller_id,
+            s.username, s.full_name, pin_color,
+            v.id AS visit_id, v.visit_type, v.evidence_photo, v.observations,
+            pos.id AS pos_id, pos.name AS pos_name, pos.address as pos_address, pos.lat, pos.lon, pos.ubication, pos.img as pos_img
+        FROM (
+            SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY executed_at DESC) AS rn
             FROM product_movements
-            GROUP BY product_id;
-            "
-        );
+        ) pm
+        JOIN products p ON p.id = pm.product_id
+        JOIN imports i ON i.id = p.import_id
+        JOIN product_types pt ON pt.id = p.product_type_id
+        LEFT JOIN lote_details ld ON ld.product_id = p.id
+        LEFT JOIN lotes l ON l.id = ld.lote_id
+        LEFT JOIN vw_users s ON s.id = l.seller_id
+        LEFT JOIN visits v ON JSON_SEARCH(v.product_ids, 'one', pm.product_id)
+        LEFT JOIN points_of_sale pos ON pos.id = v.pos_id
+        WHERE pm.rn = 1
+        ORDER BY pm.executed_at DESC, pm.product_id;
+        ");
+        // DB::statement(
+        //     "CREATE VIEW vw_latest_product_movements AS
+        //     SELECT product_id, MAX(executed_at) AS max_executed_at
+        //     FROM product_movements
+        //     GROUP BY product_id;
+        //     "
+        // );
     }
 
     /**

@@ -14,21 +14,52 @@ class EmployeeSeeder extends Seeder
     public function run(): void
     {
         $employees = [
+            // [
+            //     "payroll_number" => "1",
+            //     "avatar" => "employees/1/1-AVATAR.PNG",
+            //     "name" => "RUBEN",
+            //     "plast_name" => "DEDOR",
+            //     "mlast_name" => "ZOTE",
+            //     "cellphone" => "8700000001",
+            //     "office_phone" => NULL,
+            //     "ext" => NULL,
+            //     "img_firm" => NULL,
+            //     "ine_front" => NULL,
+            //     "ine_back" => NULL,
+            //     "position_id" => 2,
+            //     "department_id" => 2,
+            // ]
             [
                 "payroll_number" => "1",
-                "avatar" => "employees/1/1-AVATAR.PNG",
-                "name" => "RUBEN",
-                "plast_name" => "DEDOR",
-                "mlast_name" => "ZOTE",
-                "cellphone" => "8700000001",
+                "avatar" => NULL,
+                "name" => "ROSARIO",
+                "plast_name" => "ESPINOZA",
+                "mlast_name" => "VALERIO",
+                "cellphone" => "8711646501",
                 "office_phone" => NULL,
                 "ext" => NULL,
                 "img_firm" => NULL,
                 "ine_front" => NULL,
                 "ine_back" => NULL,
+                "position_id" => 1,
+                "department_id" => 1,
+            ],
+            [
+                "payroll_number" => "2",
+                "avatar" => NULL,
+                "name" => "OFICINA",
+                "plast_name" => "OFICINA",
+                "mlast_name" => NULL,
+                "cellphone" => "1234567890",
+                "office_phone" => NULL,
+                "ext" => NULL,
+                "img_firm" => NULL,
+                "ine_front" => NULL,
+                "ine_back" => NULL,
+                "pin_color" => "#080808",
                 "position_id" => 2,
                 "department_id" => 2,
-            ]
+            ],
         ];
 
         $data = array_map(function ($employee) {

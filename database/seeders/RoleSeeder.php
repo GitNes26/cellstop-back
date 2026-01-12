@@ -28,7 +28,7 @@ class RoleSeeder extends Seeder
             [
                 'role' => 'Administrador', #2
                 'description' => 'Rol dedicado para usuarios que gestionaran el sistema.',
-                'read' => 'todas',
+                'read' => '1,2,5,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25',
                 'create' => 'todas',
                 'update' => 'todas',
                 'delete' => 'todas',
