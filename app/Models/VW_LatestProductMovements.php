@@ -61,7 +61,7 @@ class VW_LatestProductMovements extends Authenticatable
             })
 
             ->when(isset($filters['start_date_in_system']) && isset($filters['end_date_in_system']), function ($q) use ($filters) {
-                $q->whereBetween('created_at', [$filters['start_date_'], $filters['end_date_in_system']]);
+                $q->whereBetween('created_at', [$filters['start_date_in_system'], $filters['end_date_in_system']]);
             })
 
             ->when(isset($filters['search']), function ($q) use ($filters) {
