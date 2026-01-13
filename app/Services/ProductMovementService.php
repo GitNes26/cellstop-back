@@ -10,7 +10,7 @@ class ProductMovementService
    /**
     * Registra un movimiento en la bitácora de productos.
     */
-   public static function log($productId, $action, $description = null, $origin = null, $destination = null)
+   public static function log($productId, $action, $description = null, $origin = null, $destination = null, $executedAt = null)
    {
       try {
          ProductMovement::create([
@@ -20,7 +20,7 @@ class ProductMovementService
             'origin'      => $origin,
             'destination' => $destination,
             'executed_by' => Auth::id(),
-            'executed_at' => now(),
+            'executed_at' => $executedAt ?? now(),
             'active'      => true,
          ]);
       } catch (\Exception $e) {

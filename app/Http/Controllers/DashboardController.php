@@ -1133,47 +1133,59 @@ class DashboardController extends Controller
    {
       $totalProducts = (clone $query)->count();
 
-      $totalInStock = (clone $query)->when(
-         isset($filters['location_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Stock');
-         }
-      )->count();
+      $totalInStock = (clone $query)->where('destination', 'Stock')->count();
 
-      $totalPreActivated = (clone $query)->when(
-         isset($filters['activation_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Pre-activado');
-         }
-      )->count();
+      $totalPreActivated = (clone $query)->where('destination', 'Pre-activado')->count();
 
-      $totalAssigned = (clone $query)->when(
-         isset($filters['location_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Asignado');
-         }
-      )->count();
+      $totalAssigned = (clone $query)->where('destination', 'Asignado')->count();
 
-      $totalDistribuidos = (clone $query)->when(
-         isset($filters['location_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Distribuido');
-         }
-      )->count();
+      $totalDistribuidos = (clone $query)->where('destination', 'Distribuido')->count();
 
-      $totalActivated = (clone $query)->when(
-         isset($filters['activation_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Activado');
-         }
-      )->count();
+      $totalActivated = (clone $query)->where('destination', 'Activado')->count();
 
-      $totalPortados = (clone $query)->when(
-         isset($filters['activation_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Portado');
-         }
-      )->count();
+      $totalPortados = (clone $query)->where('destination', 'Portado')->count();
+
+      // $totalInStock = (clone $query)->when(
+      //    isset($filters['location_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Stock');
+      //    }
+      // )->count();
+
+      // $totalPreActivated = (clone $query)->when(
+      //    isset($filters['activation_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Pre-activado');
+      //    }
+      // )->count();
+
+      // $totalAssigned = (clone $query)->when(
+      //    isset($filters['location_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Asignado');
+      //    }
+      // )->count();
+
+      // $totalDistribuidos = (clone $query)->when(
+      //    isset($filters['location_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Distribuido');
+      //    }
+      // )->count();
+
+      // $totalActivated = (clone $query)->when(
+      //    isset($filters['activation_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Activado');
+      //    }
+      // )->count();
+
+      // $totalPortados = (clone $query)->when(
+      //    isset($filters['activation_status']),
+      //    function ($q) use ($filters) {
+      //       $q->where('destination', 'Portado');
+      //    }
+      // )->count();
 
       // Vendedores activos
       $activeSellers = VW_User::where('role_id', 3)

@@ -109,6 +109,9 @@ class VisitController extends Controller
 
             DB::beginTransaction();
 
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
+
             $visit = Visit::find($id);
             if (!$visit) $visit = new Visit();
 
@@ -185,7 +188,9 @@ class VisitController extends Controller
                         'Distribución',
                         "El producto se encuentra en el punto de venta $pos->name",
                         'Asignado',
-                        'Distribuido'
+                        'Distribuido',
+                        $executedAt
+
                     );
                 }
             }

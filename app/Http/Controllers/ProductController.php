@@ -390,6 +390,8 @@ class ProductController extends Controller
         $data = $request->data;
         $fileData = $request->fileData ?? null;
         $productTypeId = $request->product_type_id ?? null;
+        $executedAt = null;
+        if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
         $transaction = DB::class;
         $transaction::beginTransaction();
@@ -467,7 +469,8 @@ class ProductController extends Controller
                             'Importación inicial',
                             'Producto importado desde archivo Excel',
                             'N/A',
-                            'Stock'
+                            'Stock',
+                            $executedAt
                         );
                     }
 
@@ -811,7 +814,7 @@ class ProductController extends Controller
                             "Producto Pre-activado - ICCID: {$product->iccid}",
                             'Stock',
                             'Stock',
-                            auth()->id()
+                            // $executedAt
                         );
                     }
                 }

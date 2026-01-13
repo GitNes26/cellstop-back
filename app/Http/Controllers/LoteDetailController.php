@@ -192,6 +192,8 @@ class LoteDetailController extends Controller
             $productIds = $request->input('product_ids', []);
             $lote = Lote::find($loteId);
             $seller = VW_User::find($lote->seller_id);
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
             // Obtener productos actualmente asignados al vendedor
             $currentProducts = LoteDetail::where('lote_id', $loteId)->pluck('product_id')->toArray();
@@ -222,7 +224,8 @@ class LoteDetailController extends Controller
                             'Desasignación',
                             "Producto devuelto al almacén por {$authUser->username}",
                             $origin,
-                            'Stock'
+                            'Stock',
+                            $executedAt
                         );
 
                         // // Opcional: Log adicional para debugging
@@ -263,7 +266,8 @@ class LoteDetailController extends Controller
                         'Asignación',
                         "Producto asignado al vendedor {$seller->full_name}",
                         $origin,
-                        'Asignado'
+                        'Asignado',
+                        $executedAt
                     );
 
                     // // Opcional: Log adicional para debugging

@@ -39,6 +39,8 @@ class PortabilityController extends Controller
             // Crear registro en tabla imports
             $importController = new ImportController();
             $import = $importController->createOrUpdate($fileData);
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
             $processedCount = 0;
             $portedProducts = []; // Productos que se portaron
@@ -108,7 +110,7 @@ class PortabilityController extends Controller
                         // Actualizar producto a "Portado"
                         $product->update([
                             'activation_status' => 'Portado',
-                            'fecha' => !empty($row['fecha']) ? $row['fecha'] : now()->format('Y-m-d'),
+                            // 'fecha' => !empty($row['fecha']) ? $row['fecha'] : now()->format('Y-m-d'),
                             'evaluations_rejected' => null,
                             'updated_at' => now()
                         ]);
@@ -120,7 +122,7 @@ class PortabilityController extends Controller
                             "Producto portado - Número: {$telefono}, ICCID: {$product->iccid}",
                             $previousStatus,
                             'Portado',
-                            Auth::id()
+                            $executedAt
                         );
 
                         // Opcional: Registrar en tabla de portabilidades
@@ -207,6 +209,8 @@ class PortabilityController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         $countRegisters = sizeof($request->ids);
+        $executedAt = null;
+        if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
         // Log::info("registros: " . $countRegisters);
         DB::beginTransaction();
@@ -244,7 +248,7 @@ class PortabilityController extends Controller
                 // Actualizar producto a "Portado"
                 $product->update([
                     'activation_status' => 'Portado',
-                    'fecha' => now()->format('Y-m-d'),
+                    // 'fecha' => now()->format('Y-m-d'),
                     'evaluations_rejected' => null,
                     'updated_at' => now()
                 ]);
@@ -256,7 +260,7 @@ class PortabilityController extends Controller
                     "Producto portado manualmente por criterio de evaluaciones - Número: {$product->telefono}, ICCID: {$product->iccid}",
                     $previousStatus,
                     'Portado',
-                    Auth::id()
+                    $executedAt
                 );
 
                 // Opcional: Registrar en tabla de portabilidades
@@ -384,6 +388,8 @@ class PortabilityController extends Controller
         try {
             $auth = Auth::user();
             $product = Product::find($productId);
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
             if (!$product) {
                 $response->data = ObjResponse::CatchResponse("Producto no encontrado");
@@ -412,7 +418,7 @@ class PortabilityController extends Controller
                 "Portabilidad revertida por {$auth->name}",
                 'Portado',
                 $previousStatus,
-                $auth->id
+                $executedAt
             );
 
             DB::commit();

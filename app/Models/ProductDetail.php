@@ -567,6 +567,9 @@ class ProductDetail extends Model
     private static function updateProductWarnings(array $productsToFlag): void
     {
         try {
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
+
             foreach ($productsToFlag as $data) {
                 $product = $data['product'];
                 $warningLevel = $data['warning_level'];
@@ -591,7 +594,7 @@ class ProductDetail extends Model
                     "El producto cuenta con $rechazadasConsecutivas evaluaciones RECHAZADAS seguidas - $warningLevel - en detalle de línea - ICCID: {$product->iccid}",
                     $lastMovement->origin,
                     $lastMovement->destination,
-                    auth()->id()
+                    $executedAt
                 );
 
                 // // Opcional: Log del cambio
@@ -615,6 +618,9 @@ class ProductDetail extends Model
         // $normalizerData = new NormalizerDateService();
 
         try {
+            $executedAt = null;
+            if (isset($request->executed_at)) $executedAt = $request->executed_at;
+
             foreach ($productsToUpdate as $item) {
                 $product = $item['product'];
                 $detail = $item['detail_data'];
@@ -637,7 +643,7 @@ class ProductDetail extends Model
                     "Producto activado automáticamente por pago confirmado en detalle de línea - ICCID: {$product->iccid}",
                     $lastMovement->origin,
                     'Activado',
-                    auth()->id()
+                    $executedAt
                 );
 
                 // Opcional: Log adicional para debugging
