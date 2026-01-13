@@ -275,7 +275,7 @@ class ProductDetail extends Model
                 // === VALIDACIÓN 3: Buscar producto ===
                 $product = null;
                 $productId = null;
-                Log::error("productCache: " . json_encode($productCache));
+                // Log::error("productCache: " . json_encode($productCache));
 
                 // Buscar en cache primero
                 if (isset($productCache[$iccid])) {
@@ -292,12 +292,11 @@ class ProductDetail extends Model
                     }
 
                     // Si no se encontró por product_id, buscar por ICCID
-                    Log::error("product: " . json_encode($product));
-                    Log::error("iccid: " . json_encode($iccid));
+                    // Log::error("product: " . json_encode($product));
+                    // Log::error("iccid: " . json_encode($iccid));
                     if (!$product && !empty($iccid)) {
                         $product = Product::where('iccid', 'like', "$iccid%")->first();
 
-                        Log::error("product-as-sa-: " . json_encode($product));
 
                         if (!$product) {
                             $errors[] = [
