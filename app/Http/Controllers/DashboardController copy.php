@@ -29,28 +29,12 @@ class DashboardController extends Controller
          $filters = $request->validate([
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-
             'seller_id' => 'nullable|array',
             // 'seller_id.*' => 'exists:employees,id',
-            'folio' => 'nullable|string',
-
-            'start_date_pre_activation' => 'nullable|date',
-            'end_date_pre_activation' => 'nullable|date|after_or_equal:start_date_pre_activation',
-
-            'folio' => 'nullable|string',
-
-            'import_name' => 'nullable|string',
-
             'location_status' => 'nullable|in:Stock,Asignado,Distribuido',
             'activation_status' => 'nullable|in:Virgen,Pre-activado,Activado,Portado,Caducado',
-
             'product_type_id' => 'nullable|exists:product_types,id',
-
-            'start_date_in_system' => 'nullable|date',
-            'end_date_in_system' => 'nullable|date|after_or_equal:start_date_in_system',
-
             'search' => 'nullable|string|max:100',
-
             'pos_id' => 'nullable|exists:points_of_sale,id',
          ]);
 
@@ -61,8 +45,8 @@ class DashboardController extends Controller
             ->orderBy('executed_at', 'asc')
             ->orderBy('product_id', 'asc');
 
-         // Log::info($query->toSql());
-         // Log::info($query->getBindings());
+         Log::info($query->toSql());
+         Log::info($query->getBindings());
 
          // $list = (clone $query)->get();
 
@@ -1131,49 +1115,56 @@ class DashboardController extends Controller
 
    private function getGeneralStats(mixed $query, array $filters)
    {
-      $totalProducts = (clone $query)->count();
+      // $query = Product::query();
+      // getSellerFiltersProducts();
+      // Log::info("DashboardController ~ getGeneralStats ~ query:" . $query->toSql());
+
+      // // Aplicar filtros
+      // $this->applyFilters($query, $filters);
+
+      // ->get();
+
+
+      $totalProducts = (clone $query)->when(
+         isset($filters['start_date']) && isset($filters['end_date']),
+         function ($q) use ($filters) {
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
+         }
+      )->count();
 
       $totalInStock = (clone $query)->when(
-         isset($filters['location_status']),
+         isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->where('destination', 'Stock');
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
-      )->count();
-
-      $totalPreActivated = (clone $query)->when(
-         isset($filters['activation_status']),
-         function ($q) use ($filters) {
-            $q->where('destination', 'Pre-activado');
-         }
-      )->count();
+      )->where('location_status', 'Stock')->count();
+      $totalPreActivated = (clone $query)->where('activation_status', 'Pre-activado')->count();
 
       $totalAssigned = (clone $query)->when(
-         isset($filters['location_status']),
+         isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->where('destination', 'Asignado');
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
-      )->count();
+      )->where('location_status', 'Asignado')->count();
 
       $totalDistribuidos = (clone $query)->when(
-         isset($filters['location_status']),
+         isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->where('destination', 'Distribuido');
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
-      )->count();
-
+      )->where('location_status', 'Distribuido')->count();
       $totalActivated = (clone $query)->when(
-         isset($filters['activation_status']),
+         isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->where('destination', 'Activado');
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
-      )->count();
-
+      )->where('activation_status', 'Activado')->count();
       $totalPortados = (clone $query)->when(
-         isset($filters['activation_status']),
+         isset($filters['start_date']) && isset($filters['end_date']),
          function ($q) use ($filters) {
-            $q->where('destination', 'Portado');
+            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
          }
-      )->count();
+      )->where('activation_status', 'Portado')->count();
 
       // Vendedores activos
       $activeSellers = VW_User::where('role_id', 3)

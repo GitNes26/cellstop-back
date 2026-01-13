@@ -100,9 +100,9 @@ class Controller extends BaseController
      * 
      * @param \Illuminate\Http\Request $request
      * @param string $table Nombre de la tabla a validar.
-     * @param array $fields Array de campos a validar, cada campo es un array con 'field', 'label', 'rules' y 'messages'.
+     * @param array $fields Array de campos a validar, cada campo es un array con 'field', 'label', 'rules', 'messages','validateRequired'.
      * Ejemplo: [
-     *     ['field' => 'username', 'label' => 'Nombre de usuario', 'rules' => ['required', 'string'], 'messages' => ['required' => 'El campo username es obligatorio.', 'string' => 'El nombre de usuario debe ser texto.']]...
+     *     ['field' => 'username', 'label' => 'Nombre de usuario', 'rules' => ['required', 'string'], 'messages' => ['required' => 'El campo username es obligatorio.', 'string' => 'El nombre de usuario debe ser texto.'], 'validateRequired' => true]...
      * @param int|null $id ID del registro a excluir de la validación (para actualizaciones).
      * @return \Illuminate\Contracts\Validation\Validator
      */
@@ -113,23 +113,39 @@ class Controller extends BaseController
 
         $index = 0;
         foreach ($fields as $field) {
+            // Log::info($field);
             $field = $field['field'];
             $label = $field['label'] ?? $field;
             $extraRules = $field['rules'] ?? [];
             $extraMessages = $field['messages'] ?? [];
+            $validateRequired = isset($field['validateRequired']) ? $field['validateRequired'] : 1;
 
-            $fieldRules = array_merge(
-                ['required'],
-                $extraRules,
-            );
+            // Log::info("validateRequired: " . $validateRequired);
+            // Log::info(isset($field['validateRequired']) && $field['validateRequired']);
+            // Log::info(isset($field['validateRequired']) ? $field['validateRequired'] : 1);
+
+            $fieldRules = $extraRules;
+
+            if ($validateRequired == 1) {
+                if (!in_array('required', $fieldRules)) {
+                    array_unshift($fieldRules, 'required');
+                }
+                if (!isset($extraMessages['required'])) {
+                    $messages["$field.required"] = "El campo $label es obligatorio.";
+                } else {
+                    $messages["$field.required"] = $extraMessages['required'];
+                    unset($extraMessages['required']);
+                }
+            }
+
             // Solo agrega la regla unique si se solicita
             if ($validateUniqueFirstField && $index == 0) {
                 $fieldRules[] = "unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1';
+                $messages["$field.unique"] = "$label no está disponible! - $request[$field] ya existe, intenta con uno diferente.";
             }
+
             $rules[$field] = $fieldRules;
 
-            $messages["$field.required"] = "El campo $label es obligatorio.";
-            $messages["$field.unique"] = "$label no está disponible! - $request[$field] ya existe, intenta con uno diferente.";
             foreach ($extraMessages as $rule => $msg) {
                 $messages["$field.$rule"] = $msg;
             }

@@ -104,9 +104,10 @@ class EmployeeController extends Controller
                     'label' => 'Color de pin',
                     'rules' => ['string', 'unique:employees,pin_color' . ($id ? ",$id,active,1" : "")],
                     'messages' => [
-                        'string' => 'El número celular debe ser texto.',
+                        'string' => 'El número El pin debe de ser un color valido.',
                         'unique' => 'El color de pin no está disponible! - :input ya existe, intenta con uno diferente.',
-                    ]
+                    ],
+                    'validateRequired' => 0,
                 ]
             ], $id);
             if ($validator->fails()) {
