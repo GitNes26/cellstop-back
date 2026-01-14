@@ -406,7 +406,7 @@ class ProductController extends Controller
             $duplicatedIccids = [];
             $newProducts = [];
 
-            $executedAt = isset($data[0]['Fecha']) ? $data[0]['Fecha'] : now();
+            // $executedAt = isset($data[0]['Fecha']) ? $data[0]['Fecha'] : now();
 
             // Obtener ICCIDs existentes
             $existingIccids = Product::whereIn(
@@ -472,7 +472,7 @@ class ProductController extends Controller
                             'Producto importado desde archivo Excel',
                             'N/A',
                             'Stock',
-                            $executedAt //$executedAt
+                            $product->fecha //$executedAt
                         );
                     }
 
