@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class VW_LatestProductMovements extends Authenticatable
 {
@@ -28,9 +29,16 @@ class VW_LatestProductMovements extends Authenticatable
     // Ejemplo de scope para aplicar filtros dinámicos 
     public function scopeApplyFilters($query, array $filters)
     {
-        return $query->when(isset($filters['start_date']) && isset($filters['end_date']), function ($q) use ($filters) {
-            $q->whereBetween('executed_at', [$filters['start_date'], $filters['end_date']]);
-        })
+        // Log::info($query);
+        // Log::info("filtros" . json_encode($filters, true));
+
+        return $query
+            ->when(isset($filters['start_date']), function ($q) use ($filters) {
+                $q->whereDate('executed_at', '>=', $filters['start_date']);
+            })
+            ->when(isset($filters['end_date']), function ($q) use ($filters) {
+                $q->whereDate('executed_at', '<=', $filters['end_date']);
+            })
 
             ->when(isset($filters['seller_id']) && count($filters['seller_id']) > 0, function ($q) use ($filters) {
                 $q->whereIn('seller_id', $filters['seller_id']);
@@ -40,8 +48,13 @@ class VW_LatestProductMovements extends Authenticatable
                 $q->where('folio', $filters['folio']);
             })
 
-            ->when(isset($filters['start_date_pre_activation']) && isset($filters['end_date_pre_activation']), function ($q) use ($filters) {
-                $q->whereBetween('fecha', [$filters['start_date_pre_activation'], $filters['end_date_pre_activation']]);
+            ->when(isset($filters['start_date_pre_activation']), function ($q) use ($filters) {
+                $q->whereDate('fecha', '>=', $filters['start_date_pre_activation']);
+                // ->whereBetween('fecha', [$filters['start_date_pre_activation'], $filters['end_date_pre_activation']]);
+            })
+            ->when(isset($filters['end_date_pre_activation']), function ($q) use ($filters) {
+                $q->whereDate('fecha', '<=', $filters['end_date_pre_activation']);
+                // ->whereBetween('fecha', [$filters['start_date_pre_activation'], $filters['end_date_pre_activation']]);
             })
 
             ->when(isset($filters['import_name']), function ($q) use ($filters) {
@@ -60,8 +73,13 @@ class VW_LatestProductMovements extends Authenticatable
                 $q->where('product_type_id', $filters['product_type_id']);
             })
 
-            ->when(isset($filters['start_date_in_system']) && isset($filters['end_date_in_system']), function ($q) use ($filters) {
-                $q->whereBetween('created_at', [$filters['start_date_in_system'], $filters['end_date_in_system']]);
+            ->when(isset($filters['start_date_in_system']), function ($q) use ($filters) {
+                $q->whereDate('created_at', '>=', $filters['start_date_in_system']);
+                // ->whereBetween('created_at', [$filters['start_date_in_system'], $filters['end_date_in_system']]);
+            })
+            ->when(isset($filters['end_date_in_system']), function ($q) use ($filters) {
+                $q->whereDate('created_at', '<=', $filters['end_date_in_system']);
+                // ->whereBetween('created_at', [$filters['start_date_in_system'], $filters['end_date_in_system']]);
             })
 
             ->when(isset($filters['search']), function ($q) use ($filters) {

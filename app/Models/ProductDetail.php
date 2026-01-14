@@ -361,6 +361,7 @@ class ProductDetail extends Model
 
                         $productsToFlag[$productId] = [
                             'product' => $product,
+                            'detail_data' => $detail,
                             'warning_level' => $warningLevel,
                             'rechazadas_consecutivas' => $rechazadasConsecutivas,
                             'evaluations' => $currentEvaluations
@@ -432,6 +433,7 @@ class ProductDetail extends Model
 
             foreach ($chunks as $chunk) {
                 try {
+                    // $chunk->fecha_evaluacion;
                     self::insert($chunk);
                     $insertedCount += count($chunk);
                 } catch (\Exception $e) {
@@ -571,6 +573,7 @@ class ProductDetail extends Model
 
             foreach ($productsToFlag as $data) {
                 $product = $data['product'];
+                $detail = $item['detail_data'];
                 $warningLevel = $data['warning_level'];
                 $rechazadasConsecutivas = $data['rechazadas_consecutivas'];
 
@@ -593,7 +596,8 @@ class ProductDetail extends Model
                     "El producto cuenta con $rechazadasConsecutivas evaluaciones RECHAZADAS seguidas - $warningLevel - en detalle de línea - ICCID: {$product->iccid}",
                     $lastMovement->origin,
                     $lastMovement->destination,
-                    $executedAt
+                    $detail['FECHA PUBLICACION']
+                    //$executedAt
                 );
 
                 // // Opcional: Log del cambio
@@ -642,7 +646,7 @@ class ProductDetail extends Model
                     "Producto activado automáticamente por pago confirmado en detalle de línea - ICCID: {$product->iccid}",
                     $lastMovement->origin,
                     'Activado',
-                    $executedAt
+                    $detail['FECHA PUBLICACION']
                 );
 
                 // Opcional: Log adicional para debugging

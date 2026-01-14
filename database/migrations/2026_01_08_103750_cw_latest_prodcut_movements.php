@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("CREATE VIEW vw_latest_product_movements AS
+        DB::statement("CREATE or REPLACE VIEW vw_latest_product_movements AS
         SELECT pm.*,
             p.iccid, p.imei, p.fecha, p.celular, p.folio, p.num_orden,
             p.tipo_sim, p.modelo, p.marca, p.color, p.location_status,

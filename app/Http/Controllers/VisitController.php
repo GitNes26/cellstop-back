@@ -160,7 +160,7 @@ class VisitController extends Controller
             //     );
             // }
 
-            if (!empty($productsIds)) {
+            // if (!empty($productsIds)) {
                 // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
                 $productsIds = is_array($request->product_ids)
                     ? $request->product_ids
@@ -193,7 +193,7 @@ class VisitController extends Controller
 
                     );
                 }
-            }
+            // }
 
 
             DB::commit();

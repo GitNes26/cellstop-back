@@ -33,6 +33,9 @@ class PortabilityController extends Controller
         $data = $request->data;
         $fileData = $request->fileData ?? null;
 
+        // Log::info("data" . json_encode($data, true));
+        // return;
+
         DB::beginTransaction();
 
         try {
@@ -122,7 +125,7 @@ class PortabilityController extends Controller
                             "Producto portado - Número: {$telefono}, ICCID: {$product->iccid}",
                             $previousStatus,
                             'Portado',
-                            $executedAt
+                            $row['fecha_portacion'] // $executedAt
                         );
 
                         // Opcional: Registrar en tabla de portabilidades
@@ -210,7 +213,10 @@ class PortabilityController extends Controller
 
         $countRegisters = sizeof($request->ids);
         $executedAt = null;
-        if (isset($request->executed_at)) $executedAt = $request->executed_at;
+        if (isset($request->ids['executed_at'])) $executedAt = $request->ids['executed_at'];
+        // Log::info($request->ids);
+        // Log::info($request["executed_at"]);
+        // Log::info("executedAt: " . $executedAt);
 
         // Log::info("registros: " . $countRegisters);
         DB::beginTransaction();
@@ -303,14 +309,16 @@ class PortabilityController extends Controller
 
         // Si tienes tabla 'portabilities', crea el registro
         try {
-            $fecha = !empty($product->fecha) ? $product->fecha : (!isNull($row) ? $row['fecha'] : null);
+            $fecha_activacion = !isNull($row) ? $row['fecha_activacion'] : (!empty($product->fecha) ? $product->fecha : null);
+
+            $fecha_portacion = !isNull($row) ? $row['fecha_portacion'] : (!empty($product->fecha) ? $product->fecha : nullnow()->format('Y-m-d'));
 
             Portability::create([
                 'product_id' => $product->id,
                 'phone_number' => $product->celular,
                 // 'iccid' => $product->iccid,
-                'activation_date' => $fecha,
-                'portability_date' => now()->format('Y-m-d'),
+                'activation_date' => $fecha_activacion,
+                'portability_date' => $fecha_portacion,
                 // 'operador_origen' => $row['operador_origen'] ?? $row['OPERADOR_ORIGEN'] ?? null,
                 // 'operador_destino' => $row['operador_destino'] ?? $row['OPERADOR_DESTINO'] ?? null,
                 // 'folio_portabilidad' => $row['folio'] ?? $row['FOLIO'] ?? null,
