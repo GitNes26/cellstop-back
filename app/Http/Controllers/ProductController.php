@@ -390,8 +390,8 @@ class ProductController extends Controller
         $data = $request->data;
         $fileData = $request->fileData ?? null;
         $productTypeId = $request->product_type_id ?? null;
-        $executedAt = null;
-        if (isset($request->executed_at)) $executedAt = $request->executed_at;
+        // $executedAt = null;
+        // if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
         $transaction = DB::class;
         $transaction::beginTransaction();
@@ -405,6 +405,8 @@ class ProductController extends Controller
             $insertedCount = 0;
             $duplicatedIccids = [];
             $newProducts = [];
+
+            $executedAt = isset($data[0]['Fecha']) ? $data[0]['Fecha'] : now();
 
             // Obtener ICCIDs existentes
             $existingIccids = Product::whereIn(
@@ -470,7 +472,7 @@ class ProductController extends Controller
                             'Producto importado desde archivo Excel',
                             'N/A',
                             'Stock',
-                            $executedAt
+                            $executedAt //$executedAt
                         );
                     }
 
