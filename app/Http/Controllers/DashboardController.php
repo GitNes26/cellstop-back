@@ -922,7 +922,7 @@ class DashboardController extends Controller
 
          // $products = $pos->products;
 
-         $lastDistribution = $lastDistributions[$pos->id]?->first();
+         // $lastDistribution = $lastDistributions[$pos->id]?->first();
 
          // $topSeller = $topSellers[$pos->id] ?? null;
          // $topSellerInfo = $topSeller
@@ -968,13 +968,13 @@ class DashboardController extends Controller
                // ] : null,
             ],
 
-            'last_distribution' => $lastDistribution ? [
-               'date' => $lastDistribution->executed_at,
-               'executed_by' => $lastDistribution->executed_by,
-               'quantity' => $lastDistribution->description
-                  ? (int) preg_replace('/\D/', '', $lastDistribution->description)
-                  : 0,
-            ] : null,
+            // 'last_distribution' => $lastDistribution ? [
+            //    'date' => $lastDistribution->executed_at,
+            //    'executed_by' => $lastDistribution->executed_by,
+            //    'quantity' => $lastDistribution->description
+            //       ? (int) preg_replace('/\D/', '', $lastDistribution->description)
+            //       : 0,
+            // ] : null,
 
             // 'primary_seller' => $seller ? [
             //    'id' => $seller->id,
