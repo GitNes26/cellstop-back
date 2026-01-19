@@ -59,14 +59,20 @@ class UserController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            $roleAuth = Auth::user()->role_id;
+            $auth = Auth::user();
+
             $signo = "=";
-            $signo = $role_id == 2 && $roleAuth == 1 ? "<=" : "=";
+            $signo = $role_id == 2 && $auth->role_id == 1 ? "<=" : "=";
 
             $list = User::where('active', true)->where("role_id", $signo, $role_id)
                 ->select('id as id', 'username as label')
-                ->orderBy('id', 'desc')
-                ->get();
+                ->orderBy('id', 'desc');
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('id', $auth->id);
+            }
+
+            $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'peticion satisfactoria | lista de usuarios.';

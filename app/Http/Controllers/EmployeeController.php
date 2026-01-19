@@ -49,11 +49,19 @@ class EmployeeController extends Controller
     public function selectIndex(Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
+        $auth = Auth::user();
+
         try {
             $list = Employee::where('active', true)
                 ->select('id as id', DB::raw("CONCAT(payroll_number, ' - ', TRIM(CONCAT(name, ' ', COALESCE(plast_name, ''), ' ', COALESCE(mlast_name, '')))) as label"))
-                ->orderBy(DB::raw("CONCAT(payroll_number, ' - ', TRIM(CONCAT(name, ' ', COALESCE(plast_name, ''), ' ', COALESCE(mlast_name, ''))))"), 'asc')
-                ->get();
+                ->orderBy(DB::raw("CONCAT(payroll_number, ' - ', TRIM(CONCAT(name, ' ', COALESCE(plast_name, ''), ' ', COALESCE(mlast_name, ''))))"), 'asc');
+
+
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
+            $list = $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'peticion satisfactoria | lista de empleados.';

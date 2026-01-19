@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ObjResponse;
+use App\Models\VW_LatestProductMovements;
 use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,8 +26,8 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         try {
             $auth = Auth::user();
-            $list = Product::with(['product_type', 'import', 'import.uploader'])
-                ->orderBy('iccid', 'asc');
+            // $list = Product::with(['product_type', 'import', 'import.uploader'])
+            $list = VW_LatestProductMovements::orderBy('iccid', 'asc');
 
             // Aplicar filtros desde request
             if ($request->has('product_type_id')) {
