@@ -31,7 +31,7 @@ class ProductController extends Controller
 
             // Aplicar filtros desde request
             if ($request->has('product_type_id')) {
-                $list->byProductType($request->product_type_id);
+                $list->where('product_type_id', $request->product_type_id);
             }
 
             if ($request->has('id')) {
@@ -52,16 +52,16 @@ class ProductController extends Controller
 
             if ($request->has('activation_status')) {
                 if (is_array($request->activation_status)) { #=== 'array') {
-                    $list->whereActivationStatusIn($request->activation_status);
+                    $list->whereIn('activation_status', $request->activation_status);
                 } else {
-                    $list->byActivationStatus($request->activation_status);
+                    $list->where('activation_status', $request->activation_status);
                 }
             }
             if ($request->has('location_status')) {
                 if (is_array($request->location_status)) { #=== 'array') {
-                    $list->whereLocationStatusIn($request->location_status);
+                    $list->whereIn('location_status',   $request->location_status);
                 } else {
-                    $list->byLocationStatus($request->location_status);
+                    $list->where('location_status', $request->location_status);
                 }
             }
 
