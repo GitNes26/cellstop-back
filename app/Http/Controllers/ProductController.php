@@ -44,9 +44,9 @@ class ProductController extends Controller
 
             if ($request->has('folio')) {
                 if (is_array($request->folio)) { #=== 'array') {
-                    $list->whereFolioIn($request->folio);
+                    $list->whereIn('folio', $request->folio);
                 } else {
-                    $list->searchByFolio($request->folio);
+                    $list->where('folio', 'LIKE', "%{$request->folio}%");
                 }
             }
 
@@ -67,7 +67,8 @@ class ProductController extends Controller
 
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
-                $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+                $list->where('seller_id', $auth->id); // Solo mostrar productos asignados a este vendedor
+                // $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
             } elseif ($auth->role_id > 2 && empty($request)) {
                 $list->where('active', true);
             }
