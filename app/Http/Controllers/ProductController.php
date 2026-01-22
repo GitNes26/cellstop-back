@@ -64,6 +64,13 @@ class ProductController extends Controller
                     $list->where('location_status', $request->location_status);
                 }
             }
+            if ($request->has('destination')) {
+                if (is_array($request->destination)) { #=== 'array') {
+                    $list->whereIn('destination',   $request->destination);
+                } else {
+                    $list->where('destination', $request->destination);
+                }
+            }
 
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
