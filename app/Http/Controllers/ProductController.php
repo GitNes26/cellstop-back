@@ -25,6 +25,8 @@ class ProductController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
+            Log::info('ProductController ~ index ~ Request:', $request->all());
+
             $auth = Auth::user();
             // $list = Product::with(['product_type', 'import', 'import.uploader'])
             $list = VW_LatestProductMovements::orderBy('iccid', 'asc');
@@ -80,8 +82,7 @@ class ProductController extends Controller
                 $list->where('active', true);
             }
 
-            // $list = $list->paginate(25);
-            $list = $list->get();
+            $list = $request->per_page ? $list->paginate($request->per_page ?? 25) : $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
