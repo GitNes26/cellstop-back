@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    return "API LARAVEL :)";
+    return "API LARAVEL v1.0.0.6 :)";
 });
 
 Route::post('/login', [AuthController::class, 'login']);

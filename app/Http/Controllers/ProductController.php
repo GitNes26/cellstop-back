@@ -82,7 +82,7 @@ class ProductController extends Controller
                 $list->where('active', true);
             }
 
-            $list = $request->per_page ? $list->paginate($request->per_page ?? 25) : $list->get();
+            $list = $request->per_page ? $list->paginate($request->per_page ?? 100) : $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de productos.';
@@ -192,7 +192,8 @@ class ProductController extends Controller
 
             // Log::info($list->toSql());
             // Log::info($list->getBindings());
-            $list = $list->get();
+            // // $list = $list->get();
+            $list = $request->per_page ? $list->paginate($request->per_page ?? 100) : $list->get();
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = 'Petición satisfactoria | Lista de productos para selector.';
