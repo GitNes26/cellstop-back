@@ -41,7 +41,11 @@ class VW_LatestProductMovements extends Authenticatable
             })
 
             ->when(isset($filters['seller_id']) && count($filters['seller_id']) > 0, function ($q) use ($filters) {
-                $q->whereIn('seller_id', $filters['seller_id']);
+                if (is_array($filters['seller_id'])) { #=== 'array') {
+                    $q->whereIn('seller_id', $filters['seller_id']);
+                } else {
+                    $q->where('seller_id', $filters['seller_id']);
+                }
             })
 
             ->when(isset($filters['id']), function ($q) use ($filters) {
