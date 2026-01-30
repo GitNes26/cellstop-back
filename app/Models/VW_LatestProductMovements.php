@@ -44,8 +44,20 @@ class VW_LatestProductMovements extends Authenticatable
                 $q->whereIn('seller_id', $filters['seller_id']);
             })
 
+            ->when(isset($filters['id']), function ($q) use ($filters) {
+                if (is_array($filters['id'])) { #=== 'array') {
+                    $q->whereIn('id', $filters['id']);
+                } else {
+                    $q->where('id', $filters['id']);
+                }
+            })
+
             ->when(isset($filters['folio']), function ($q) use ($filters) {
-                $q->where('folio', $filters['folio']);
+                if (is_array($filters['folio'])) { #=== 'array') {
+                    $q->whereIn('folio', $filters['folio']);
+                } else {
+                    $q->where('folio', $filters['folio']);
+                }
             })
 
             ->when(isset($filters['start_date_pre_activation']), function ($q) use ($filters) {
@@ -62,11 +74,19 @@ class VW_LatestProductMovements extends Authenticatable
             })
 
             ->when(isset($filters['location_status']), function ($q) use ($filters) {
-                $q->where('location_status', $filters['location_status']);
+                if (is_array($filters['location_status'])) { #=== 'array') {
+                    $q->whereIn('location_status', $filters['location_status']);
+                } else {
+                    $q->where('location_status', $filters['location_status']);
+                }
             })
 
             ->when(isset($filters['activation_status']), function ($q) use ($filters) {
-                $q->where('activation_status', $filters['activation_status']);
+                if (is_array($filters['activation_status'])) { #=== 'array') {
+                    $q->whereIn('activation_status', $filters['activation_status']);
+                } else {
+                    $q->where('activation_status', $filters['activation_status']);
+                }
             })
 
             ->when(isset($filters['product_type_id']), function ($q) use ($filters) {

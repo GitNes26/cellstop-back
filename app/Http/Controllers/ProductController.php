@@ -129,7 +129,9 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         $auth = Auth::user();
         try {
-            $list = Product::where('active', true)
+            // $list = Product::where('active', true)
+            $list = VW_LatestProductMovements::applyFilters($request)
+                ->where('active', true)
                 ->select(
                     'id',
                     DB::raw("
@@ -143,55 +145,59 @@ class ProductController extends Controller
                             )
                         ) as label
                     "),
-                    'location_status',
-                    'activation_status',
+                    // 'location_status',
+                    // 'activation_status',
+                    'destination',
                     'folio'
                 )
                 ->orderBy('celular', 'asc');
 
-            if ($request->has('product_type_id')) {
-                $list->byProductType($request->product_type_id);
-            }
+            // if ($request->has('product_type_id')) {
+            //     $list->byProductType($request->product_type_id);
+            // }
 
             // Log::info($request->all());
-            if ($request->has('id')) {
-                if (is_array($request->id)) { #=== 'array') {
-                    $list->whereIn('id', $request->id);
-                } else {
-                    $list->where('id', $request->id);
-                }
-            }
+            // if ($request->has('id')) {
+            //     if (is_array($request->id)) { #=== 'array') {
+            //         $list->whereIn('id', $request->id);
+            //     } else {
+            //         $list->where('id', $request->id);
+            //     }
+            // }
 
-            if ($request->has('folio')) {
-                if (is_array($request->folio)) { #=== 'array') {
-                    $list->whereFolioIn($request->folio);
-                } else {
-                    $list->searchByFolio($request->folio);
-                }
-            }
+            // if ($request->has('folio')) {
+            //     if (is_array($request->folio)) { #=== 'array') {
+            //         $list->whereFolioIn($request->folio);
+            //     } else {
+            //         $list->searchByFolio($request->folio);
+            //     }
+            // }
 
-            if ($request->has('activation_status')) {
-                if (is_array($request->activation_status)) { #=== 'array') {
-                    $list->whereActivationStatusIn($request->activation_status);
-                } else {
-                    $list->byActivationStatus($request->activation_status);
-                }
-            }
-            if ($request->has('location_status')) {
-                if (is_array($request->location_status)) { #=== 'array') {
-                    $list->whereLocationStatusIn($request->location_status);
-                } else {
-                    $list->byLocationStatus($request->location_status);
-                }
-            }
+            // if ($request->has('activation_status')) {
+            //     if (is_array($request->activation_status)) { #=== 'array') {
+            //         $list->whereActivationStatusIn($request->activation_status);
+            //     } else {
+            //         $list->byActivationStatus($request->activation_status);
+            //     }
+            // }
+            // if ($request->has('location_status')) {
+            //     if (is_array($request->location_status)) { #=== 'array') {
+            //         $list->whereLocationStatusIn($request->location_status);
+            //     } else {
+            //         $list->byLocationStatus($request->location_status);
+            //     }
+            // }
 
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
-                $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+                $list->where('seller_id', $auth->id); // Solo mostrar productos asignados a este vendedor
+                // $list->assignedToSeller($auth->id); // Solo mostrar productos asignados a este vendedor
+            } elseif ($auth->role_id > 2 && empty($request)) {
+                $list->where('active', true);
             }
 
-            // Log::info($list->toSql());
-            // Log::info($list->getBindings());
+            Log::info($list->toSql());
+            Log::info($list->getBindings());
             // // $list = $list->get();
             $list = $request->per_page ? $list->paginate($request->per_page ?? 100) : $list->get();
 
