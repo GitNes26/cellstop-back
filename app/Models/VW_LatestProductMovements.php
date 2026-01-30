@@ -40,7 +40,7 @@ class VW_LatestProductMovements extends Authenticatable
                 $q->whereDate('executed_at', '<=', $filters['end_date']);
             })
 
-            ->when(isset($filters['seller_id']) && count($filters['seller_id']) > 0, function ($q) use ($filters) {
+            ->when(isset($filters['seller_id']), function ($q) use ($filters) {
                 if (is_array($filters['seller_id'])) { #=== 'array') {
                     $q->whereIn('seller_id', $filters['seller_id']);
                 } else {
