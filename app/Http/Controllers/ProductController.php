@@ -129,8 +129,10 @@ class ProductController extends Controller
         $response->data = ObjResponse::DefaultResponse();
         $auth = Auth::user();
         try {
+            $filters = $request->all();
+            Log::info($filters);
             // $list = Product::where('active', true)
-            $list = VW_LatestProductMovements::applyFilters($request)
+            $list = VW_LatestProductMovements::applyFilters($filters)
                 ->where('active', true)
                 ->select(
                     'id',
