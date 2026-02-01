@@ -25,6 +25,7 @@ class LoteDetail extends Model
     protected $fillable = [
         'lote_id',
         'product_id',
+        'unassigned',
         'assigned_at',
         'assigned_by',
         'active'

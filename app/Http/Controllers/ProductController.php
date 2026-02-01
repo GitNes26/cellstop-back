@@ -25,54 +25,13 @@ class ProductController extends Controller
     {
         $response->data = ObjResponse::DefaultResponse();
         try {
-            Log::info('ProductController ~ index ~ Request:', $request->all());
+            // Log::info('ProductController ~ index ~ Request:', $request->all());
 
+            $filters = $request->all();
             $auth = Auth::user();
             // $list = Product::with(['product_type', 'import', 'import.uploader'])
-            $list = VW_LatestProductMovements::orderBy('iccid', 'asc');
+            $list = VW_LatestProductMovements::applyFilters($filters)->orderBy('iccid', 'asc');
 
-            // Aplicar filtros desde request
-            if ($request->has('product_type_id')) {
-                $list->where('product_type_id', $request->product_type_id);
-            }
-
-            if ($request->has('id')) {
-                if (is_array($request->id)) { #=== 'array') {
-                    $list->whereIn('id', $request->id);
-                } else {
-                    $list->where('id', $request->id);
-                }
-            }
-
-            if ($request->has('folio')) {
-                if (is_array($request->folio)) { #=== 'array') {
-                    $list->whereIn('folio', $request->folio);
-                } else {
-                    $list->where('folio', 'LIKE', "%{$request->folio}%");
-                }
-            }
-
-            if ($request->has('activation_status')) {
-                if (is_array($request->activation_status)) { #=== 'array') {
-                    $list->whereIn('activation_status', $request->activation_status);
-                } else {
-                    $list->where('activation_status', $request->activation_status);
-                }
-            }
-            if ($request->has('location_status')) {
-                if (is_array($request->location_status)) { #=== 'array') {
-                    $list->whereIn('location_status',   $request->location_status);
-                } else {
-                    $list->where('location_status', $request->location_status);
-                }
-            }
-            if ($request->has('destination')) {
-                if (is_array($request->destination)) { #=== 'array') {
-                    $list->whereIn('destination',   $request->destination);
-                } else {
-                    $list->where('destination', $request->destination);
-                }
-            }
 
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
@@ -130,7 +89,7 @@ class ProductController extends Controller
         $auth = Auth::user();
         try {
             $filters = $request->all();
-            Log::info($filters);
+            // Log::info($filters);
             // $list = Product::where('active', true)
             $list = VW_LatestProductMovements::applyFilters($filters)
                 ->where('active', true)
@@ -142,7 +101,7 @@ class ProductController extends Controller
                             NULLIF(celular, ''),
                             NULLIF(iccid, ''),
                             IFNULL(
-                                DATE_FORMAT(fecha, '%Y/%m/%d'),
+                                DATE_FORMAT(fecha, '%d/%m/%Y'),
                                 ''
                             )
                         ) as label
@@ -154,42 +113,6 @@ class ProductController extends Controller
                 )
                 ->orderBy('celular', 'asc');
 
-            // if ($request->has('product_type_id')) {
-            //     $list->byProductType($request->product_type_id);
-            // }
-
-            // Log::info($request->all());
-            // if ($request->has('id')) {
-            //     if (is_array($request->id)) { #=== 'array') {
-            //         $list->whereIn('id', $request->id);
-            //     } else {
-            //         $list->where('id', $request->id);
-            //     }
-            // }
-
-            // if ($request->has('folio')) {
-            //     if (is_array($request->folio)) { #=== 'array') {
-            //         $list->whereFolioIn($request->folio);
-            //     } else {
-            //         $list->searchByFolio($request->folio);
-            //     }
-            // }
-
-            // if ($request->has('activation_status')) {
-            //     if (is_array($request->activation_status)) { #=== 'array') {
-            //         $list->whereActivationStatusIn($request->activation_status);
-            //     } else {
-            //         $list->byActivationStatus($request->activation_status);
-            //     }
-            // }
-            // if ($request->has('location_status')) {
-            //     if (is_array($request->location_status)) { #=== 'array') {
-            //         $list->whereLocationStatusIn($request->location_status);
-            //     } else {
-            //         $list->byLocationStatus($request->location_status);
-            //     }
-            // }
-
             // FILTRO ESPECIAL PARA VENDEDORES (role_id === 3)
             if ($auth->role_id === 3) {
                 $list->where('seller_id', $auth->id); // Solo mostrar productos asignados a este vendedor
@@ -198,8 +121,8 @@ class ProductController extends Controller
                 $list->where('active', true);
             }
 
-            Log::info($list->toSql());
-            Log::info($list->getBindings());
+            // Log::info($list->toSql());
+            // Log::info($list->getBindings());
             // // $list = $list->get();
             $list = $request->per_page ? $list->paginate($request->per_page ?? 100) : $list->get();
 
@@ -702,7 +625,7 @@ class ProductController extends Controller
                             NULLIF(celular, ''),
                             NULLIF(iccid, ''),
                             IFNULL(
-                                DATE_FORMAT(fecha, '%Y/%m/%d'),
+                                DATE_FORMAT(fecha, '%d/%m/%Y'),
                                 ''
                             )
                         ) as label

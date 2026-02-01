@@ -13,7 +13,15 @@ return new class extends Migration
     public function up(): void
     {
         DB::statement("CREATE or REPLACE VIEW vw_latest_product_movements AS
-        SELECT pm.*,
+        SELECT 
+            p.id AS id, -- ahora el id principal es el del producto
+
+            pm.product_id,
+            pm.id AS product_movements_id, -- id del movimiento
+            -- pm.*
+            pm.action, pm.description, pm.origin, pm.destination,
+            pm.executed_at, pm.executed_by, pm.active, pm.created_at, pm.updated_at, pm.deleted_at,
+        
             p.iccid, p.imei, p.fecha, p.celular, p.folio, p.num_orden,
             p.tipo_sim, p.modelo, p.marca, p.color, p.location_status,
             p.activation_status, p.product_type_id, pt.product_type,

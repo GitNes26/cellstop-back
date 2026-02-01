@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('lote_id')->constrained('lotes', 'id')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('products', 'id')->onDelete('cascade');
+            $table->boolean('unassigned')->nullable();
             $table->timestamp('assigned_at')->useCurrent();
             $table->foreignId('assigned_by')->constrained('users', 'id')->onDelete('cascade')->comment("usuario que asigno el producto"); // admin o supervisor
 
@@ -24,7 +25,6 @@ return new class extends Migration
 
             $table->index('product_id');
             $table->index('lote_id');
-
         });
     }
 

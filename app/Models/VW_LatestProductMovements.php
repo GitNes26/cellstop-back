@@ -61,6 +61,7 @@ class VW_LatestProductMovements extends Authenticatable
                     $q->whereIn('folio', $filters['folio']);
                 } else {
                     $q->where('folio', $filters['folio']);
+                    $q->where('folio', 'LIKE', "%{$filters['folio']}%");
                 }
             })
 
@@ -94,7 +95,11 @@ class VW_LatestProductMovements extends Authenticatable
             })
 
             ->when(isset($filters['product_type_id']), function ($q) use ($filters) {
-                $q->where('product_type_id', $filters['product_type_id']);
+                if (is_array($filters['product_type_id'])) { #=== 'array') {
+                    $q->whereIn('product_type_id', $filters['product_type_id']);
+                } else {
+                    $q->where('product_type_id', $filters['product_type_id']);
+                }
             })
 
             ->when(isset($filters['start_date_in_system']), function ($q) use ($filters) {
@@ -104,6 +109,14 @@ class VW_LatestProductMovements extends Authenticatable
             ->when(isset($filters['end_date_in_system']), function ($q) use ($filters) {
                 $q->whereDate('created_at', '<=', $filters['end_date_in_system']);
                 // ->whereBetween('created_at', [$filters['start_date_in_system'], $filters['end_date_in_system']]);
+            })
+
+            ->when(isset($filters['destination']), function ($q) use ($filters) {
+                if (is_array($filters['destination'])) { #=== 'array') {
+                    $q->whereIn('destination',   $filters['destination']);
+                } else {
+                    $q->where('destination', $filters['destination']);
+                }
             })
 
             ->when(isset($filters['search']), function ($q) use ($filters) {
