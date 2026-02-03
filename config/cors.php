@@ -19,8 +19,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://affectionate-curie.74-208-99-24.plesk.page'
-        // '*'
+        '*'
+        // 'https://affectionate-curie.74-208-99-24.plesk.page'
         // 'https://localhost:5173',
         // 'http://localhost:5173',
         // 'http://127.0.0.1:5173',
