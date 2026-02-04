@@ -272,7 +272,7 @@ class LoteDetailController extends Controller
                     }
                 }
 
-                $availableProducts = Product::whereIn('id', $productsToAssign)->where('location_status', 'Stock')->get();
+                $availableProducts = Product::whereIn('id', $productsToAssign)->get(); #->where('location_status', 'Stock')->get();
                 foreach ($availableProducts as $product) {
                     // si hay registrosen LoteDetail pero están como desasignados, reactivar ese registro
                     $existingDetail = LoteDetail::where('lote_id', $loteId)
