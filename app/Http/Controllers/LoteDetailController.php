@@ -29,6 +29,7 @@ class LoteDetailController extends Controller
             $auth = Auth::user();
 
             $list = LoteDetail::with(['lote.seller', 'product', 'assigner'])
+                ->where('unassigned', false)
                 ->orderBy('id', 'desc');
 
             // Si el usuario no es administrador, sólo mostrar activos
@@ -62,6 +63,7 @@ class LoteDetailController extends Controller
         try {
             $list = LoteDetail::where('active', true)
                 ->with('seller:id,username,full_name')
+                ->where('unassigned', false)
                 ->select('id', 'lote', 'seller_id')
                 ->orderBy('lote', 'asc')
                 ->get()
@@ -131,6 +133,7 @@ class LoteDetailController extends Controller
 
         try {
             $query = LoteDetail::with(['lote.seller', 'product', 'assigner'])
+                ->where('unassigned', false)
                 ->where("lote_id", $loteId);
 
             // 🔍 Loguear SQL generado
@@ -196,11 +199,22 @@ class LoteDetailController extends Controller
             if (isset($request->executed_at)) $executedAt = $request->executed_at;
 
             // Obtener productos actualmente asignados al vendedor
-            $currentProducts = LoteDetail::where('lote_id', $loteId)->pluck('product_id')->toArray();
+            $currentProducts = LoteDetail::where('lote_id', $loteId)
+                ->where('unassigned', false)
+                ->pluck('product_id')->toArray();
+            $currentUnassignedProducts = LoteDetail::where('lote_id', $loteId)
+                ->where('unassigned', true)
+                ->pluck('product_id')->toArray();
 
             // Productos a asignar y desasignar
             $productsToAssign = array_diff($productIds, $currentProducts);
             $productsToUnassign = array_diff($currentProducts, $productIds);
+
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ request->all():', $request->all());
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ currentProducts:', $currentProducts);
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ currentUnassignedProducts:', $currentUnassignedProducts);
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToAssign:', $productsToAssign);
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToUnassign:', $productsToUnassign);
 
             $assigned = [];
             $unassigned = [];
@@ -210,6 +224,7 @@ class LoteDetailController extends Controller
             // DESASIGNAR productos removidos
             if (!empty($productsToUnassign)) {
                 $productsToRemove = LoteDetail::where('lote_id', $loteId)
+                    ->where('unassigned', false)
                     ->whereIn('product_id', $productsToUnassign)
                     ->get();
 
@@ -218,6 +233,10 @@ class LoteDetailController extends Controller
                     if ($product && $product->location_status === 'Asignado') {
                         $origin = $product->location_status;
                         $product->update(['location_status' => 'Stock']);
+
+                        $dist->update([
+                            'unassigned' => true,
+                        ]);
 
                         ProductMovementService::log(
                             $product->id,
@@ -228,16 +247,6 @@ class LoteDetailController extends Controller
                             $executedAt
                         );
 
-                        // // Opcional: Log adicional para debugging
-                        // Log::info("DESASIGNAR producto", [
-                        //     'product_id' => $product->id,
-                        //     'iccid' => $product->iccid,
-                        //     'Desasignación',
-                        //     "Producto devuelto al almacén por {$authUser->username}",
-                        //     $origin,
-                        //     'Stock'
-                        // ]);
-
                         $unassigned[] = $product->id;
                     }
 
@@ -247,17 +256,44 @@ class LoteDetailController extends Controller
 
             // ASIGNAR productos nuevos
             if (!empty($productsToAssign)) {
+
+                foreach ($currentUnassignedProducts as $unassignedProductId) {
+                    if (in_array($unassignedProductId, $productsToAssign)) {
+                        // Si el producto desasignado está en la lista de asignación, editar el registro en lugar de crear uno nuevo
+                        $detail = LoteDetail::where('lote_id', $loteId)
+                            ->where('product_id', $unassignedProductId)
+                            ->where('unassigned', true)
+                            ->first();
+                        if ($detail) {
+                            $detail->update([
+                                'unassigned' => false,
+                            ]);
+                        }
+                    }
+                }
+
                 $availableProducts = Product::whereIn('id', $productsToAssign)->where('location_status', 'Stock')->get();
-
                 foreach ($availableProducts as $product) {
-                    LoteDetail::create([
-                        'lote_id' => $loteId,
-                        'product_id' => $product->id,
-                        'assigned_at' => now(),
-                        'assigned_by' => $authUser->id,
-                        'active' => true
-                    ]);
+                    // si hay registrosen LoteDetail pero están como desasignados, reactivar ese registro
+                    $existingDetail = LoteDetail::where('lote_id', $loteId)
+                        ->where('product_id', $product->id)
+                        ->where('active', true)
+                        // ->where('unassigned', true)
+                        ->first();
 
+                    if ($existingDetail) {
+                        $existingDetail->update([
+                            'unassigned' => false,
+                        ]);
+                    } else {
+                        LoteDetail::create([
+                            'lote_id' => $loteId,
+                            'product_id' => $product->id,
+                            'assigned_at' => now(),
+                            'assigned_by' => $authUser->id,
+                            'active' => true
+                        ]);
+                    }
                     $origin = $product->location_status;
                     $product->update(['location_status' => 'Asignado']);
 
@@ -289,7 +325,9 @@ class LoteDetailController extends Controller
             // PREPARAR listados para TransferList
             $allProducts = Product::whereIn('id', array_merge($productIds, $currentProducts))->get();
             $left = $allProducts->where('location_status', 'Stock')->map(fn($c) => $c->id)->values();
-            $right = LoteDetail::where('lote_id', $loteId)->pluck('product_id');
+            $right = LoteDetail::where('lote_id', $loteId)
+                ->where('unassigned', false)
+                ->pluck('product_id');
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = "Asignaciones actualizadas correctamente.";

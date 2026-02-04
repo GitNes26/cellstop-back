@@ -55,7 +55,7 @@ class PointOfSaleController extends Controller
             $auth = Auth::user();
 
             $list = PointOfSale::where('active', true)
-                ->select('id', DB::raw("CONCAT(name, ' - ', address) as label, lat, lon"))
+                ->select('id', DB::raw("CONCAT(name, ' - ', address) as label, lat, lon, seller_id"))
                 ->orderBy('name', 'asc');
 
             if ($auth->role_id == 3) {
