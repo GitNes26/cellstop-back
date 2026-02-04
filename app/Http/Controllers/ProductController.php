@@ -405,7 +405,7 @@ class ProductController extends Controller
                     DB::table('products')->insert($batch);
 
                     // Obtener IDs insertados (solo los nuevos ICCID)
-                    $newlyInserted = Product::whereIn('iccid', array_column($batch, 'iccid'))->get(['id', 'iccid']);
+                    $newlyInserted = Product::whereIn('iccid', array_column($batch, 'iccid'))->get(['id', 'iccid', 'fecha']);
 
                     foreach ($newlyInserted as $product) {
                         ProductMovementService::log(
