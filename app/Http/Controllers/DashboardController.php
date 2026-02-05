@@ -595,7 +595,7 @@ class DashboardController extends Controller
 
             $activeProducts = $assignedProducts->filter(function ($item) {
                $dest = strtolower($item->destination ?? '');
-               return in_array($dest, ['activo', 'active']);
+               return in_array($dest, ['activo', 'activado']);
             });
 
             $portedProducts = $assignedProducts->filter(function ($item) {
