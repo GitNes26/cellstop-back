@@ -576,7 +576,7 @@ class DashboardController extends Controller
             }
          )
          ->get()
-         ->map(function ($seller) use ($filters) {
+         ->map(function ($seller) use ($query, $filters) {
             $sellerId = $seller->id;
 
             $assignedProducts = (clone $query)->where('seller_id', $sellerId)->get();
