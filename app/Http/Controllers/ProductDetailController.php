@@ -364,11 +364,12 @@ class ProductDetailController extends Controller
 
             // Procesar datos usando el método del modelo
             $result = ProductDetail::processBulkData($data, $importId);
-            Log::error("RESULT: " . json_encode($result));  
+            Log::error("RESULT: " . json_encode($result));
 
             if (!empty($result['errores_encontrados'])) {
-                DB::rollBack();
-                $response->data = ObjResponse::CatchResponse("Errores en la carga masiva");
+                // DB::rollBack();
+                // $response->data = ObjResponse::CatchResponse("Errores en la carga masiva");
+                $response->data = ObjResponse::SuccessResponse();
                 $response->data["metrics"]["errors"] = $result['errores_encontrados'];
                 $response->data["processed"] = $result['registros_procesados'];
                 return response()->json($response, 200);
