@@ -73,7 +73,7 @@ class DashboardController extends Controller
                // 'list' => $list,
                'stats' => $this->getGeneralStats($query, $filters),
                // 'ported_products' => $this->getPortedProductsWithDetails($filters),
-               'sellers_performance' => $this->getSellersDashboard($filters),
+               'sellers_performance' => $this->getSellersDashboard($query, $filters),
                // 'movements_per_day' => $this->getMovementsPerDay($query, $filters),
                'points_of_sale' => $this->getPointsOfSaleWithInventory($filters),
                // 'portability_by_month' => $this->getPortabilityByMonth($filters),
@@ -550,7 +550,7 @@ class DashboardController extends Controller
          });
    }
 
-   private function getSellersDashboard(array $filters)
+   private function getSellersDashboard($query, array $filters)
    {
       $usertAuth = Auth::user();
       if ($usertAuth->role_id === 3) $filters['seller_id'] = [$usertAuth->id];
@@ -579,17 +579,14 @@ class DashboardController extends Controller
          ->map(function ($seller) use ($filters) {
             $sellerId = $seller->id;
 
-            // Id Productos asignados
-            $assignedProductsId = $this->getSellerAssignedProductsId($sellerId, $filters);
-            $filters["productIds"] = $assignedProductsId;
-
-            $assignedProducts = $this->getSellerFiltersProducts($sellerId, $filters);
+            $assignedProducts = (clone $query)->where('seller_id', $sellerId)->get();
+            // Log::info($assignedProducts);
 
             // Filtrar el collection de movimientos por la propiedad `destination`
-            $stockAssignedProducts = $assignedProducts->filter(function ($item) {
-               $dest = strtolower($item->destination ?? '');
-               return in_array($dest, ['stock', 'asignado', 'asignados']);
-            });
+            // $stockAssignedProducts = $assignedProducts->filter(function ($item) {
+            //    $dest = strtolower($item->destination ?? '');
+            //    return in_array($dest, ['stock', 'asignado', 'asignados']);
+            // });
 
             $distributedProducts = $assignedProducts->filter(function ($item) {
                $dest = strtolower($item->destination ?? '');
@@ -685,6 +682,142 @@ class DashboardController extends Controller
             ];
          });
    }
+   #borrar si la de arriba funciona
+   // private function getSellersDashboard(array $filters)
+   // {
+   //    $usertAuth = Auth::user();
+   //    if ($usertAuth->role_id === 3) $filters['seller_id'] = [$usertAuth->id];
+   //    // Log::info(json_encode($filters, true));
+
+   //    return VW_User::select([
+   //       'id',
+   //       'employee_id',
+   //       'full_name',
+   //       'name',
+   //       'cellphone',
+   //       'position',
+   //       'department',
+   //       'avatar',
+   //       'pin_color', // Nuevo campo agregado
+   //    ])
+   //       ->where('role_id', 3) // Solo vendedores
+   //       ->where('active', 1)
+   //       ->when(
+   //          isset($filters['seller_id']) && count($filters['seller_id']) > 0,
+   //          function ($q) use ($filters) {
+   //             $q->whereIn('id', $filters['seller_id']);
+   //          }
+   //       )
+   //       ->get()
+   //       ->map(function ($seller) use ($filters) {
+   //          $sellerId = $seller->id;
+
+   //          // Id Productos asignados
+   //          $assignedProductsId = $this->getSellerAssignedProductsId($sellerId, $filters);
+   //          $filters["productIds"] = $assignedProductsId;
+
+   //          $assignedProducts = $this->getSellerFiltersProducts($sellerId, $filters);
+
+   //          // Filtrar el collection de movimientos por la propiedad `destination`
+   //          $stockAssignedProducts = $assignedProducts->filter(function ($item) {
+   //             $dest = strtolower($item->destination ?? '');
+   //             return in_array($dest, ['stock', 'asignado', 'asignados']);
+   //          });
+
+   //          $distributedProducts = $assignedProducts->filter(function ($item) {
+   //             $dest = strtolower($item->destination ?? '');
+   //             return in_array($dest, ['distribuido', 'distribuidos']);
+   //          });
+
+   //          $activeProducts = $assignedProducts->filter(function ($item) {
+   //             $dest = strtolower($item->destination ?? '');
+   //             return in_array($dest, ['activo', 'active']);
+   //          });
+
+   //          $portedProducts = $assignedProducts->filter(function ($item) {
+   //             $dest = strtolower($item->destination ?? '');
+   //             return $dest === 'portado';
+   //          });
+
+   //          // Puntos de venta asignados
+   //          $assignedPOS = $this->getSellerPointsOfSale($sellerId, $filters);
+
+   //          // Visitas realizadas
+   //          $dailyVisits = $this->getSellerVisits($sellerId, $filters, true);
+   //          $visits = $this->getSellerVisits($sellerId, $filters);
+
+   //          return [
+   //             'id' => $seller->id,
+   //             'full_name' => $seller->full_name,
+   //             // 'cellphone' => $seller->cellphone,
+   //             // 'position' => $seller->position,
+   //             // 'department' => $seller->department,
+   //             // 'avatar' => $seller->avatar,
+   //             'pin_color' => $seller->pin_color ?? $this->generateColor($seller->id),
+
+   //             // // Estadísticas de productos
+   //             'assigned' => $assignedProducts->count(),
+   //             // 'in_stock' => $stockAssignedProducts->count(),
+   //             'distributed' => $distributedProducts->count(),
+   //             'actived' => $activeProducts->count(),
+   //             'ported' => $portedProducts->count(),
+
+   //             // // porcentaje
+   //             // 'assigned_rate' => $assignedProducts->count() > 0
+   //             //    ? round(($assignedProducts->count() / $assignedProducts->count()) * 100, 2)
+   //             //    : 0,
+   //             // 'in_stock_rate' => $assignedProducts->count() > 0
+   //             //    ? round(($stockAssignedProducts->count() / $assignedProducts->count()) * 100, 2)
+   //             //    : 0,
+   //             // 'distributed_rate' => $assignedProducts->count() > 0
+   //             //    ? round(($distributedProducts->count() / $assignedProducts->count()) * 100, 2)
+   //             //    : 0,
+   //             // 'actived_rate' => $assignedProducts->count() > 0
+   //             //    ? round(($activeProducts->count() / $assignedProducts->count()) * 100, 2)
+   //             //    : 0,
+   //             // 'ported_rate' => $assignedProducts->count() > 0
+   //             //    ? round(($portedProducts->count() / $assignedProducts->count()) * 100, 2)
+   //             //    : 0,
+
+   //             // eficacia y deficiencia
+   //             'efficiency' => $assignedProducts->count() > 0
+   //                ? round((($activeProducts->count() * 100) / $assignedProducts->count()), 2)
+   //                : 0,
+   //             'deficiency' => $assignedProducts->count() > 0
+   //                ? round((($portedProducts->count() * 100) / $assignedProducts->count()), 2)
+   //                : 0,
+
+
+
+   //             // Puntos de venta
+   //             'points_of_sale' => $assignedPOS->count(),
+
+   //             // Visitas
+   //             'visits' => 0, //$visits->count(),
+   //             'daily' => 0, //$dailyVisits->count(),
+
+   //             // Lotes asignados
+   //             'lotes' => Lote::where('seller_id', $sellerId)
+   //                ->when(
+   //                   isset($filters['start_date']) && isset($filters['end_date']),
+   //                   function ($q) use ($filters) {
+   //                      $q->whereDate('created_at', '>=', $filters['start_date'])->whereDate('created_at', '<=', $filters['end_date']);
+   //                      // ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+   //                   }
+   //                )
+   //                ->get()
+   //                ->map(function ($lote) {
+   //                   return [
+   //                      'id' => $lote->id,
+   //                      'name' => $lote->lote,
+   //                      'folio' => $lote->folio,
+   //                      'quantity' => $lote->quantity,
+   //                      'preactivation_date' => $lote->preactivation_date,
+   //                   ];
+   //                }),
+   //          ];
+   //       });
+   // }
 
    // Helper functions para estadísticas de vendedor
    private function getSellerAssignedProductsId($sellerId, $filters)
