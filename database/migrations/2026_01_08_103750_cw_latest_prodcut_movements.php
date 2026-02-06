@@ -27,7 +27,7 @@ return new class extends Migration
             p.activation_status, p.product_type_id, pt.product_type,
             p.evaluations_rejected,
             i.name import_name, ui.username uploader_username, ui.full_name uploader_full_name,
-            l.lote, l.lada, l.preactivation_date, l.quantity, l.description description_lote, l.seller_id,
+            l.id as lote_id, l.lote, l.lada, l.preactivation_date, l.quantity, l.description description_lote, l.seller_id,
             s.username, s.full_name, s.pin_color,
             v.id AS visit_id, v.visit_type, v.evidence_photo, v.observations,
             pos.id AS pos_id, pos.name AS pos_name, pos.address as pos_address, pos.lat, pos.lon, pos.ubication, pos.img as pos_img
