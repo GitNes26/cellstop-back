@@ -108,6 +108,8 @@ class ProductController extends Controller
                     "),
                     // 'location_status',
                     // 'activation_status',
+                    'seller_id',
+                    'pos_id',
                     'destination',
                     'folio'
                 )
