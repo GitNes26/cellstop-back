@@ -15,8 +15,8 @@ return new class extends Migration
         DB::statement(
             "CREATE OR REPLACE VIEW vw_employees AS 
             SELECT e.*, 
-            CONCAT(e.name,' ',e.plast_name,' ',e.mlast_name) as full_name, 
-            CONCAT(e.plast_name,' ',e.mlast_name,' ',e.name) as full_name_reverse, 
+            CONCAT(e.name,' ',IFNULL(e.plast_name,''), ' ', IFNULL(e.mlast_name,'')) as full_name, 
+            CONCAT(IFNULL(e.plast_name,''), ' ', IFNULL(e.mlast_name,''), ' ', e.name) as full_name_reverse, 
             p.position, p.description, d.letters, d.department, d.department_description,
             u.username
             FROM employees e
