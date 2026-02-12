@@ -345,4 +345,105 @@ class LoteDetailController extends Controller
 
         return response()->json($response, $response->data["status_code"]);
     }
+
+    public function createMultipleManually(Request $request, Response $response)
+    {
+        $response->data = ObjResponse::DefaultResponse();
+        $authUser = auth()->user();
+
+
+        $countRegisters = sizeof($request->ids);
+        $executedAt = null;
+        if (isset($request->ids['executed_at'])) $executedAt = $request->ids['executed_at'];
+        // Log::info($request->ids);
+        // Log::info($request["executed_at"]);
+        // Log::info("executedAt: " . $executedAt);
+
+        // Log::info("registros: " . $countRegisters);
+        DB::beginTransaction();
+
+        try {
+            $processedCount = 0;
+            $alreadyPorted = [];
+
+
+            // Buscar productos por su id
+            $products = Product::whereIn('id', $request->ids)
+                ->where('active', true)
+                ->get();
+
+            // Log::info("products: " . json_encode($products, true));
+
+            $index = 0;
+            foreach ($products as $product) {
+                // Guardar el estado anterior
+                $previousStatus = $product->location_status;
+
+                // Obtener Lote
+                $lote = Lote::find($request->lote_id);
+                //Obtener vendedor
+                $seller = VW_User::find($lote->seller_id);
+
+                // Actualizar producto a "Asignado", si es la fecha de ejecucion es mayor a la fecha de actualizacion del porducto, se asigna pero con fecha de asignacion futura
+                if ($executedAt && $executedAt > $product->updated_at) {
+                    $product->update([
+                        'location_status' => 'Asignado',
+                        'updated_at' => now()
+                    ]);
+                }
+
+
+                // Registrar en tabla de LoteDEtails
+                LoteDetail::create([
+                    'lote_id' => $lote->id,
+                    'product_id' => $product->id,
+                    'assigned_at' => now(),
+                    'assigned_by' => $authUser->id,
+                    'active' => true
+                ]);
+
+                //obtener los movimientos del producto para obtener el status anterior a la asignacion manual segun lafecha de ejecucion, si no hay movimientos anteriores, se toma el status del producto antes de la actualizacion
+                $lastMovement = ProductMovementService::getMovementsByProductId($product->id)
+                    ->where('executed_at', '<=', $executedAt ?? now())
+                    ->sortByDesc('executed_at')
+                    ->first();
+                // Registrar movimiento
+                ProductMovementService::log(
+                    $product->id,
+                    'Asignación',
+                    "Producto asignado manualmente al vendedor {$seller->full_name}",
+                    $lastMovement->destination,
+                    'Asignado',
+                    $executedAt
+                );
+
+
+                $index++;
+                $processedCount++;
+            }
+
+            DB::commit();
+
+            $response->data = ObjResponse::SuccessResponse();
+            $response->data["message"] = "Procesados {$processedCount} registros asignados manualmente.";
+            $response->data["alert_text"] = "{$processedCount} productos marcados como Asignado Manual.";
+
+            // Agregar métricas detalladas
+            $response->data["metrics"] = [
+                'registros_totales' => count($products),
+                'asignados' => $processedCount,
+                // 'no_encontrados' => 0,
+                // 'asignados_anteriormente' => count($alreadyPorted),
+                'errores' => 0
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $msg = "LoteDetailController ~ createMultipleManually ~ Hubo un error -> " . $e->getMessage();
+            Log::error($msg);
+            $response->data = ObjResponse::CatchResponse($msg);
+            return response()->json($response, 500);
+        }
+
+        return response()->json($response, $response->data["status_code"]);
+    }
 }

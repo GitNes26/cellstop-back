@@ -226,6 +226,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get("/id/{id}", [LoteDetailController::class, 'show']);
         Route::get("/showByLote/{loteId}", [LoteDetailController::class, 'showByLote']);
         Route::post('/updateLoteAssignment', [LoteDetailController::class, 'updateLoteAssignment']);
+
+        Route::post('/createMultipleManually', [LoteDetailController::class, 'createMultipleManually']);
     });
 
     Route::prefix('portabilities')->group(function () {
