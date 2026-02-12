@@ -796,6 +796,9 @@ class ProductController extends Controller
 
 
 
+    
+
+
 
     /**
      * Mostrar el historial de movimientos de un producto.

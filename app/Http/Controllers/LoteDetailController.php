@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Lote;
 use App\Models\LoteDetail;
 use App\Models\ObjResponse;
+use App\Models\ProductMovement;
 use App\Models\VW_User;
 use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
@@ -355,9 +356,10 @@ class LoteDetailController extends Controller
         $countRegisters = sizeof($request->ids);
         $executedAt = null;
         if (isset($request->ids['executed_at'])) $executedAt = $request->ids['executed_at'];
-        // Log::info($request->ids);
+        // Log::info($request->ids['ids']);
         // Log::info($request["executed_at"]);
         // Log::info("executedAt: " . $executedAt);
+        // return
 
         // Log::info("registros: " . $countRegisters);
         DB::beginTransaction();
@@ -365,10 +367,11 @@ class LoteDetailController extends Controller
         try {
             $processedCount = 0;
             $alreadyPorted = [];
+            $fullLotes = [];
 
 
             // Buscar productos por su id
-            $products = Product::whereIn('id', $request->ids)
+            $products = Product::whereIn('id', $request->ids['ids'])
                 ->where('active', true)
                 ->get();
 
@@ -380,7 +383,17 @@ class LoteDetailController extends Controller
                 $previousStatus = $product->location_status;
 
                 // Obtener Lote
-                $lote = Lote::find($request->lote_id);
+                $lote = Lote::find($request->ids['lote_id']);
+
+                // validar que el lote aun tenga espacio para asignar (quantity)
+                $productsCurrentAssignments = LoteDetail::where('lote_id', $lote->id)->where('unassigned', '!=', 1)->where('active', true)->where('deleted_at', null)->count();
+
+                if ($productsCurrentAssignments >= $lote->quantity) {
+                    array_push($fullLotes, $lote->lote);
+                    continue;
+                }
+
+
                 //Obtener vendedor
                 $seller = VW_User::find($lote->seller_id);
 
@@ -403,10 +416,11 @@ class LoteDetailController extends Controller
                 ]);
 
                 //obtener los movimientos del producto para obtener el status anterior a la asignacion manual segun lafecha de ejecucion, si no hay movimientos anteriores, se toma el status del producto antes de la actualizacion
-                $lastMovement = ProductMovementService::getMovementsByProductId($product->id)
+                $lastMovement = ProductMovement::with(['executer'])
                     ->where('executed_at', '<=', $executedAt ?? now())
-                    ->sortByDesc('executed_at')
+                    ->orderBy('executed_at', 'desc')
                     ->first();
+
                 // Registrar movimiento
                 ProductMovementService::log(
                     $product->id,
@@ -432,6 +446,7 @@ class LoteDetailController extends Controller
             $response->data["metrics"] = [
                 'registros_totales' => count($products),
                 'asignados' => $processedCount,
+                'lotes_llenos' => count($fullLotes),
                 // 'no_encontrados' => 0,
                 // 'asignados_anteriormente' => count($alreadyPorted),
                 'errores' => 0

@@ -214,12 +214,13 @@ class PortabilityController extends Controller
         $countRegisters = sizeof($request->ids);
         $executedAt = null;
         if (isset($request->ids['executed_at'])) $executedAt = $request->ids['executed_at'];
-        // Log::info($request->ids);
-        // Log::info($request["executed_at"]);
-        // Log::info("executedAt: " . $executedAt);
+        Log::info($request->ids['ids']);
+        return
+            // Log::info($request["executed_at"]);
+            // Log::info("executedAt: " . $executedAt);
 
-        // Log::info("registros: " . $countRegisters);
-        DB::beginTransaction();
+            // Log::info("registros: " . $countRegisters);
+            DB::beginTransaction();
 
         try {
             $processedCount = 0;
@@ -227,7 +228,7 @@ class PortabilityController extends Controller
 
 
             // Buscar productos por su id
-            $products = Product::whereIn('id', $request->ids)
+            $products = Product::whereIn('id', $request->ids['ids'])
                 ->where('active', true)
                 ->get();
 
