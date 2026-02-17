@@ -201,7 +201,7 @@ class LoteDetailController extends Controller
 
             // Obtener productos actualmente asignados al vendedor
             $currentProducts = LoteDetail::where('lote_id', $loteId)
-                ->where('unassigned', false)
+                ->where('unassigned', '!=', true)
                 ->pluck('product_id')->toArray();
             $currentUnassignedProducts = LoteDetail::where('lote_id', $loteId)
                 ->where('unassigned', true)
@@ -212,9 +212,9 @@ class LoteDetailController extends Controller
             $productsToUnassign = array_diff($currentProducts, $productIds);
 
             // Log::info('LoteDetailController ~ updateLoteAssignment ~ request->all():', $request->all());
-            // Log::info('LoteDetailController ~ updateLoteAssignment ~ currentProducts:', $currentProducts);
-            // Log::info('LoteDetailController ~ updateLoteAssignment ~ currentUnassignedProducts:', $currentUnassignedProducts);
-            // Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToAssign:', $productsToAssign);
+            Log::info('LoteDetailController ~ updateLoteAssignment ~ currentProducts:', $currentProducts);
+            Log::info('LoteDetailController ~ updateLoteAssignment ~ currentUnassignedProducts:', $currentUnassignedProducts);
+            Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToAssign:', $productsToAssign);
             Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToUnassign:', $productsToUnassign);
 
             $assigned = [];
@@ -224,14 +224,18 @@ class LoteDetailController extends Controller
 
             // DESASIGNAR productos removidos
             if (!empty($productsToUnassign)) {
+                Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR productos:');
                 $productsToRemove = LoteDetail::where('lote_id', $loteId)
                     ->where('unassigned', '!=', true)
                     ->whereIn('product_id', $productsToUnassign)
                     ->get();
+                Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToRemove:', $productsToRemove->pluck('product_id'));
 
                 foreach ($productsToRemove as $dist) {
+                    Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR producto_id: ' . $dist->product_id);
                     $product = Product::find($dist->product_id);
                     if ($product) { // && $product->location_status === 'Asignado') {
+                        Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR producto encontrado:', ['product_id' => $product->id, 'iccid' => $product->iccid, 'location_status' => $product->location_status]);
                         $origin = $product->location_status;
                         $product->update(['location_status' => 'Stock']);
 
