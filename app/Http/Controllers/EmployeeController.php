@@ -58,7 +58,7 @@ class EmployeeController extends Controller
 
 
             if ($auth->role_id == 3) {
-                $list = $list->where('seller_id', $auth->id);
+                $list = $list->where('id', $auth->id);
             }
 
             $list = $list->get();

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lote;
+use App\Models\LoteDetail;
 use App\Models\ObjResponse;
+use App\Models\Product;
 use App\Models\VW_User;
+use App\Services\ProductMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -158,7 +161,7 @@ class LoteController extends Controller
             }
 
             // $lote->fill($request->only(['lote', 'seller_id', 'description', 'folio', 'lada', 'preactivation_date', 'quantity']));
-            $lote->fill($request->all());   
+            $lote->fill($request->all());
             $lote->save();
 
             $response->data = ObjResponse::SuccessResponse();
@@ -212,15 +215,52 @@ class LoteController extends Controller
         $response->data = ObjResponse::DefaultResponse();
 
         try {
+            $authUser = Auth::user();
+            $executedAt = now();
+            $unassigned = [];
+
             Lote::where('id', $id)
                 ->update([
                     'active' => false,
-                    'deleted_at' => now(),
+                    'deleted_at' => $executedAt,
                 ]);
+
+            // if (!empty($productsToUnassign)) {
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR productos');
+            $productsToRemove = LoteDetail::where('lote_id', $id)
+                ->where('unassigned', '!=', true)
+                ->get();
+            // Log::info('LoteDetailController ~ updateLoteAssignment ~ productsToRemove:', json_decode($productsToRemove, true));
+
+            foreach ($productsToRemove as $dist) {
+                // Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR producto_id: ' . $dist->product_id);
+                $product = Product::find($dist->product_id);
+                if ($product) { // && $product->location_status === 'Asignado') {
+                    // Log::info('LoteDetailController ~ updateLoteAssignment ~ DESASIGNAR producto encontrado:', ['product_id' => $product->id, 'iccid' => $product->iccid, 'location_status' => $product->location_status]);
+                    $origin = $product->location_status;
+                    $product->update(['location_status' => 'Stock']);
+
+                    $dist->update([
+                        'unassigned' => true,
+                    ]);
+
+                    ProductMovementService::log(
+                        $product->id,
+                        'Desasignación',
+                        "Producto devuelto al almacén por eliminacion de lote por {$authUser->username}",
+                        $origin,
+                        'Stock',
+                        $executedAt
+                    );
+
+                    $unassigned[] = $product->id;
+                }
+            }
+            // }
 
             $response->data = ObjResponse::SuccessResponse();
             $response->data["message"] = "Petición satisfactoria | Lote eliminado.";
-            $response->data["alert_text"] = "Lote eliminado";
+            $response->data["alert_text"] = "Lote eliminado, productos desasignados: " . (isset($unassigned) ? count($unassigned) : 0);
         } catch (\Exception $ex) {
             $msg = "LoteController ~ delete ~ Hubo un error -> " . $ex->getMessage();
             Log::error($msg);

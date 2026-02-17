@@ -140,7 +140,7 @@ class Controller extends BaseController
 
             // Solo agrega la regla unique si se solicita
             if ($validateUniqueFirstField && $index == 0) {
-                $fieldRules[] = "unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1';
+                $fieldRules[] = "unique:$table,$field," . ($id ?? 'NULL') . ',id,active,1,deleted_at,NULL';
                 $messages["$field.unique"] = "$label no está disponible! - $request[$field] ya existe, intenta con uno diferente.";
             }
 

@@ -27,6 +27,10 @@ class VisitController extends Controller
             $list = Visit::with(['products', 'seller', 'point_of_sale'])
                 ->orderBy('id', 'desc');
 
+            if ($auth->role_id == 3) {
+                $list = $list->where('seller_id', $auth->id);
+            }
+
             if ($auth->role_id > 2) {
                 $list = $list->where("active", true);
             }
@@ -55,7 +59,7 @@ class VisitController extends Controller
             $list = Visit::where('active', true)
                 ->select(
                     'id',
-                    DB::raw("CONCAT('Visita ', id, ' - ', visit_type, ' - ', IFNULL(contact_name, 'Sin contacto')) as label")
+                    DB::raw("CONCAT('Visita ', id, ' - ', visit_type, ' - ', IFNULL(name, 'Punto de venta sin Nombre')) as label")
                 )
                 ->orderBy('id', 'desc')
                 ->get();
@@ -161,38 +165,38 @@ class VisitController extends Controller
             // }
 
             // if (!empty($productsIds)) {
-                // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
-                $productsIds = is_array($request->product_ids)
-                    ? $request->product_ids
-                    : json_decode($request->product_ids, true);
+            // product_ids puede venir como string "[4,6,8]" o como array [4,6,8]
+            $productsIds = is_array($request->product_ids)
+                ? $request->product_ids
+                : json_decode($request->product_ids, true);
 
-                // if (empty($productsIds)) {
-                //     return response()->json([
-                //         "success" => false,
-                //         "message" => "No se recibieron productos"
-                //     ]);
-                // }
+            // if (empty($productsIds)) {
+            //     return response()->json([
+            //         "success" => false,
+            //         "message" => "No se recibieron productos"
+            //     ]);
+            // }
 
-                $pos = PointOfSale::find($request->pos_id);
+            $pos = PointOfSale::find($request->pos_id);
 
-                foreach ($productsIds as $id) {
+            foreach ($productsIds as $id) {
 
-                    $product = Product::find($id);
-                    if (!$product) continue;
+                $product = Product::find($id);
+                if (!$product) continue;
 
-                    $product->location_status = 'Distribuido';
-                    $product->save();
+                $product->location_status = 'Distribuido';
+                $product->save();
 
-                    ProductMovementService::log(
-                        $product->id,
-                        'Distribución',
-                        "El producto se encuentra en el punto de venta $pos->name",
-                        'Asignado',
-                        'Distribuido',
-                        $executedAt
+                ProductMovementService::log(
+                    $product->id,
+                    'Distribución',
+                    "El producto se encuentra en el punto de venta $pos->name",
+                    'Asignado',
+                    'Distribuido',
+                    $executedAt
 
-                    );
-                }
+                );
+            }
             // }
 
 
