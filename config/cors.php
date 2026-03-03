@@ -20,6 +20,7 @@ return [
 
     'allowed_origins' => [
         'https://cellstop.top',
+        '*'
     ],
 
     'allowed_origins_patterns' => [],
