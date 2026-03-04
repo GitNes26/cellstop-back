@@ -37,6 +37,12 @@ EXPOSE 80
 # Comando de inicio
 CMD ["apache2-foreground"]
 
+# Configuración personalizada de PHP
+RUN echo "memory_limit=2048M" > /usr/local/etc/php/conf.d/memory-limit.ini \
+   && echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/upload-max-filesize.ini \
+   && echo "post_max_size=500M" > /usr/local/etc/php/conf.d/post-max-size.ini \
+   && echo "max_execution_time=3600" > /usr/local/etc/php/conf.d/max-execution-time.ini
+
 
 
 # FROM php:8.2-fpm
