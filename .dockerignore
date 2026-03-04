@@ -1,0 +1,25 @@
+# Ignorar dependencias locales
+/vendor
+/node_modules
+
+# Ignorar control de versiones
+.git
+.gitignore
+
+# Ignorar configuraciones locales
+.env
+.env.local
+.env.*.local
+
+# Ignorar archivos de sistema
+*.log
+*.cache
+*.tmp
+*.swp
+
+# Ignorar configuraciones de IDE
+.vscode/
+.idea/
+
+# Ignorar archivos de despliegue locales
+docker-compose.override.yml
