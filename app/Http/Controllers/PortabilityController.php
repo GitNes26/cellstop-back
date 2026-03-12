@@ -210,17 +210,17 @@ class PortabilityController extends Controller
     public function createMultipleManually(Request $request, Response $response)
     {
         $response->data = ObjResponse::DefaultResponse();
-
+        Log::info($request);
         $countRegisters = sizeof($request->ids);
         $executedAt = null;
         if (isset($request->ids['executed_at'])) $executedAt = $request->ids['executed_at'];
         Log::info($request->ids['ids']);
-        return
-            // Log::info($request["executed_at"]);
-            // Log::info("executedAt: " . $executedAt);
+        // return
+        // Log::info($request["executed_at"]);
+        // Log::info("executedAt: " . $executedAt);
 
-            // Log::info("registros: " . $countRegisters);
-            DB::beginTransaction();
+        // Log::info("registros: " . $countRegisters);
+        DB::beginTransaction();
 
         try {
             $processedCount = 0;
