@@ -1316,7 +1316,7 @@ class DashboardController extends Controller
       $totalVisits = Visit::when(
          isset($filters['start_date']),
          function ($q) use ($filters) {
-            $q->whereDate('created_at', '>=', $filters['start_datea']);
+            $q->whereDate('created_at', '>=', $filters['start_date']);
             // ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
          }
       )
