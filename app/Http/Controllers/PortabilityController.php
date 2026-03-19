@@ -310,7 +310,7 @@ class PortabilityController extends Controller
 
         // Si tienes tabla 'portabilities', crea el registro
         try {
-            // $fecha_activacion = !isNull($row) ? $row['fecha_activacion'] : (!empty($product->fecha) ? $product->fecha : null);            
+            // $fecha_activacion = !isNull($row) ? $row['fecha_activacion'] : (!empty($product->fecha) ? $product->fecha : null);
             $fecha_activacion = (!is_null($row) && isset($row['fecha_activacion']) && !empty($row['fecha_activacion']))
                 ? $row['fecha_activacion']
                 : ((!is_null($row) && isset($row['executed_at']) && !empty($row['executed_at']))
