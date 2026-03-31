@@ -99,6 +99,67 @@ class DashboardController extends Controller
       return response()->json($response, $response->data["status_code"]);
    }
 
+   public function getReporter(Request $request, Response $response)
+   {
+      $response->data = ObjResponse::DefaultResponse();
+      try {
+         $auth = Auth::user();
+
+         $filters = $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+
+            'seller_id' => 'nullable|array',
+            // 'seller_id.*' => 'exists:employees,id',
+            'folio' => 'nullable|string',
+
+            'start_date_pre_activation' => 'nullable|date',
+            'end_date_pre_activation' => 'nullable|date|after_or_equal:start_date_pre_activation',
+
+            'folio' => 'nullable|string',
+
+            'import_name' => 'nullable|string',
+
+            'location_status' => 'nullable|in:Stock,Asignado,Distribuido',
+            'activation_status' => 'nullable|in:Virgen,Pre-activado,Activado,Portado,Caducado',
+
+            'product_type_id' => 'nullable|exists:product_types,id',
+
+            'start_date_in_system' => 'nullable|date',
+            'end_date_in_system' => 'nullable|date|after_or_equal:start_date_in_system',
+
+            'search' => 'nullable|string|max:100',
+
+            'pos_id' => 'nullable|exists:points_of_sale,id',
+         ]);
+
+         // Log::info("filtros" . json_encode($filters, true));
+
+         $query = VW_LatestProductMovements::query()
+            ->applyFilters($filters)
+            ->orderBy('executed_at', 'asc')
+            ->orderBy('product_id', 'asc');
+
+         Log::info($query->toSql());
+         Log::info($query->getBindings());
+
+         // $list = (clone $query)->get();
+         $results = $query->get();
+
+
+         $response->data = ObjResponse::SuccessResponse();
+         $response->data["message"] = 'Peticion satisfactoria | stats.';
+         $response->data["result"] = $results;
+      } catch (\Exception $ex) {
+         $msg = "DashboardController ~ reporter ~ Hubo un error -> " . $ex->getMessage();
+         Log::error($msg);
+         Log::error('Stack Trace: ' . $ex->getTraceAsString());
+         $response->data = ObjResponse::CatchResponse($msg);
+      }
+
+      return response()->json($response, $response->data["status_code"]);
+   }
+
    private function getPortedProductsWithDetails(array $filters)
    {
       return Product::select([

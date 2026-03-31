@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    return "API LARAVEL v1.0.0.14";
+    return "API LARAVEL v1.0.0.15";
 });
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -262,6 +262,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ported/report-by-seller', [ProductController::class, 'getPortabilityBySellerReport']);
 
         Route::post('/by-seller', [DashboardController::class, 'getSellerDashboard']);
+        Route::post('/getReporter', [DashboardController::class, 'getReporter']);
     });
 
     // Datos para filtros
