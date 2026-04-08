@@ -1144,6 +1144,12 @@ class DashboardController extends Controller
             'visits' => [
                'total' => $pos->visits->count(),
                'by_type' => $pos->visits->groupBy('visit_type')->map->count(),
+               'list' => $pos->visits->map(function ($visit) {
+                  return [
+                     'date' => $visit->created_at,
+                     'type' => $visit->visit_type,
+                  ];
+               }),
 
                // 'last_visit' => $latestVisit ? [
                //    'date' => $latestVisit->created_at,
